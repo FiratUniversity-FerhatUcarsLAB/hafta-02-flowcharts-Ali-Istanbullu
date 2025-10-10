@@ -1,1 +1,456 @@
+ ATM Para C¸ekme Sistemi Kart takılır ve PIN sorulur
+3 hatalı PIN giri¸sinden sonra kart bloke olur (d¨ong¨u)
+Bakiye sorgulanır
+C¸ekilmek istenen tutar girilir
+Yetersiz bakiye kontrol¨u yapılır (ko¸sul)
+20 TL’nin katları olmalı (ko¸sul)
+G¨unl¨uk limit kontrol¨u (ko¸sul)
+Para verilir ve fi¸s ¸cıkar
+Ba¸ska i¸slem yapmak ister misiniz? (d¨ong¨u)  bana bunun dotunu sözde kodunu ve açıklamasını yap
+Süper 👍
+Şimdi senin verdiğin adımlardan yola çıkarak aşağıda 3 aşamalı tam cevap hazırladım:
+
+1️⃣ DOT (Graphviz) diyagram kodu
+2️⃣ Sözde kod (pseudocode)
+3️⃣ Açıklama (detaylı anlatım tablosu)
+
+🟩 1. DOT (Graphviz) Kodu
+
+Aşağıdaki kodu bir .dot dosyasına kaydedip Graphviz’le çalıştırırsan ATM’nin para çekme akış diyagramı çizilir 👇
+
+digraph ATM_Para_Cekme {
+    rankdir=TB;
+    node [shape=box, style="filled", fillcolor="#B0E0E6", fontname="Arial"];
+
+    // Başlangıç ve Bitiş
+    node [shape=oval, style="filled"];
+    Baslat [label="BAŞLAT", fillcolor="#98FB98"];
+    Bitir [label="BİTİR", fillcolor="#FF7F7F"];
+
+    // İşlemler
+    node [shape=box, fillcolor="#B0E0E6"];
+    Kart_Tak [label="Kart Takılır ve PIN Sorulur"];
+    Bakiye_Sorgula [label="Bakiye Sorgulanır"];
+    Tutar_Gir [label="Çekilmek İstenen Tutar Girilir"];
+    Para_Ver [label="Para Verilir ve Fiş Çıkar"];
+    Kart_Iade [label="Kart İade Edilir"];
+
+    // Koşullar
+    node [shape=diamond, fillcolor="#FFD700"];
+    Pin_Kontrol [label="PIN Doğru mu?"];
+    Uc_Hata [label="3 Hatalı Giriş?"];
+    Bakiye_Kontrol [label="Yetersiz Bakiye?"];
+    Kat_Kontrol [label="20 TL'nin Katı mı?"];
+    Limit_Kontrol [label="Günlük Limit Aşıldı mı?"];
+    Baska_Islem [label="Başka İşlem İstiyor mu?"];
+
+    // Akış
+    Baslat -> Kart_Tak;
+    Kart_Tak -> Pin_Kontrol;
+
+    Pin_Kontrol -> Bakiye_Sorgula [label="Evet"];
+    Pin_Kontrol -> Uc_Hata [label="Hayır"];
+
+    Uc_Hata -> Kart_Iade [label="Evet (Kart Bloke)"];
+    Uc_Hata -> Kart_Tak [label="Hayır (Tekrar Deneme)"];
+
+    Bakiye_Sorgula -> Tutar_Gir;
+    Tutar_Gir -> Bakiye_Kontrol;
+
+    Bakiye_Kontrol -> Kat_Kontrol [label="Hayır (Yeterli)"];
+    Bakiye_Kontrol -> Baska_Islem [label="Evet (Yetersiz)"];
+
+    Kat_Kontrol -> Limit_Kontrol [label="Evet"];
+    Kat_Kontrol -> Baska_Islem [label="Hayır"];
+
+    Limit_Kontrol -> Para_Ver [label="Hayır (Limit Uygun)"];
+    Limit_Kontrol -> Baska_Islem [label="Evet (Aşıldı)"];
+
+    Para_Ver -> Baska_Islem;
+    Baska_Islem -> Bakiye_Sorgula [label="Evet"];
+    Baska_Islem -> Kart_Iade [label="Hayır"];
+
+    Kart_Iade -> Bitir;
+}
+2. Sözde Kod (Pseudocode)
+
+Bu akışın algoritmik ifadesi şöyledir 👇
+
+BAŞLAT
+
+Kart_Tak()
+PIN_Hatalari = 0
+
+TEKRAR:
+    PIN = PIN_Sor()
+    Eğer PIN doğru ise
+        Git BAKIYE_SORGULA
+    Aksi halde
+        PIN_Hatalari += 1
+        Eğer PIN_Hatalari == 3 ise
+            Kart_Bloke_Et()
+            Kart_Iade_Et()
+            BİTİR
+        Aksi halde
+            Uyar("Yanlış PIN, tekrar deneyin")
+            Git TEKRAR
+
+BAKIYE_SORGULA:
+    Bakiye = Hesap_Bakiyesi()
+    Tutar = Tutar_Sor()
+
+    Eğer Tutar > Bakiye ise
+        Uyar("Yetersiz Bakiye")
+        Git BASKA_ISLEM
+
+    Eğer Tutar % 20 ≠ 0 ise
+        Uyar("Tutar 20 TL'nin katı olmalı")
+        Git BASKA_ISLEM
+
+    Eğer Tutar > Gunluk_Limit ise
+        Uyar("Günlük limit aşıldı")
+        Git BASKA_ISLEM
+
+    Hesaptan_Düş(Tutar)
+    Para_Ver()
+    Fiş_Çıkar()
+
+BASKA_ISLEM:
+    cevap = Soru("Başka işlem yapmak ister misiniz? (E/H)")
+    Eğer cevap == 'E' ise
+        Git BAKIYE_SORGULA
+    Aksi halde
+        Kart_Iade_Et()
+        BİTİR
+
+📘 3. Açıklama Tablosu
+Adım	Tür	Açıklama
+1️⃣ Kart takılır ve PIN sorulur	İşlem	Kullanıcı kartı takar ve şifresini girer.
+2️⃣ PIN yanlışsa	Koşul + Döngü	3 kez yanlışsa kart bloke olur, aksi halde tekrar sorulur.
+3️⃣ Bakiye sorgulanır	İşlem	Kullanıcının hesabındaki bakiye gösterilir.
+4️⃣ Tutar girilir	İşlem	Kullanıcı çekmek istediği miktarı girer.
+5️⃣ Yetersiz bakiye kontrolü	Koşul	Bakiye yetersizse işlem iptal edilir.
+6️⃣ 20 TL’nin katı kontrolü	Koşul	ATM yalnızca 20 TL katlarını verebilir.
+7️⃣ Günlük limit kontrolü	Koşul	Limit aşıldıysa işlem reddedilir.
+8️⃣ Para verilir, fiş çıkar	İşlem	Tüm koşullar sağlanırsa işlem yapılır.
+9️⃣ Başka işlem ister misiniz?	Döngü	Evet → Menüye dön, Hayır → Kart iade edilip işlem biter.
+
+İstersen bu DOT kodunun görsel halini (akış diyagramını) da senin için çizebilirim
+(örneğin PNG olarak).
+
+👉 İster misin diyagramın görselini oluşturayım?
+hatalı bunlar çalışmıyor dota uygun yap
+Tamam — düzelttim. Aşağıdaki DOT kodu Graphviz (dot) ile doğrudan çalışacak şekilde yazıldı: düğüm isimleri ASCII, etiketler Türkçe. Kaydet (ör. atm.dot) ve Graphviz ile render et:
+dot -Tpng atm.dot -o atm.png
+
+Düzeltilmiş DOT (Graphviz) kodu
+digraph NORMAL_ATM_AKISI {
+  rankdir=TB;
+  graph [fontsize=12];
+  node [fontname="Helvetica", fontsize=11];
+
+  start      [shape=oval,  style=filled, fillcolor="#98FB98", label="BAŞLAT"];
+  end        [shape=oval,  style=filled, fillcolor="#FF7F7F", label="BİTİR"];
+
+  kart_pin       [shape=box,    style=filled, fillcolor="#B0E0E6", label="Kart takılır\nPIN sorulur"];
+  pin_check      [shape=diamond,style=filled, fillcolor="#FFD700", label="PIN doğru mu?"];
+  pin_block      [shape=box,    style=filled, fillcolor="#F08080", label="3 hatalı giriş\nKart bloke edilir\nİade"];
+
+  menu           [shape=box,    style=filled, fillcolor="#B0E0E6", label="Ana Menü\n(1-Bakiye 2-Çek 3-Çıkış)"];
+  bakiye         [shape=box,    style=filled, fillcolor="#B0E0E6", label="Bakiye sorgulanır"];
+  tutar          [shape=box,    style=filled, fillcolor="#B0E0E6", label="Çekilmek istenen\ntutar girilir"];
+
+  bakiye_check   [shape=diamond,style=filled, fillcolor="#FFD700", label="Yetersiz bakiye?"];
+  kat_check      [shape=diamond,style=filled, fillcolor="#FFD700", label="20 TL'nin katı mı?"];
+  limit_check    [shape=diamond,style=filled, fillcolor="#FFD700", label="Günlük limit aşıldı mı?"];
+
+  para_ver       [shape=box,    style=filled, fillcolor="#ADD8E6", label="Hesaptan düşülür\nPara verilir\nFiş çıkarılır"];
+  ask_more       [shape=diamond,style=filled, fillcolor="#FFD700", label="Başka işlem istiyor mu?"];
+  kart_iade      [shape=box,    style=filled, fillcolor="#B0E0E6", label="Kart iade edilir"];
+
+  /* Akış */
+  start -> kart_pin;
+  kart_pin -> pin_check;
+  pin_check -> menu       [label="Evet"];
+  pin_check -> kart_pin   [label="Hayır"];
+  pin_check -> pin_block  [label="3. Hata"];
+  pin_block -> end;
+
+  menu -> bakiye   [label="1"];
+  menu -> tutar    [label="2"];
+  menu -> kart_iade[label="3"];
+
+  bakiye -> ask_more;
+
+  tutar -> bakiye_check;
+  bakiye_check -> kat_check [label="Hayır (Yeterli)"];
+  bakiye_check -> ask_more  [label="Evet (Yetersiz)"];
+
+  kat_check -> limit_check [label="Evet (20'nin katı)"];
+  kat_check -> ask_more    [label="Hayır (20'nin katı değil)"];
+
+  limit_check -> para_ver  [label="Hayır (Limit uygun)"];
+  limit_check -> ask_more  [label="Evet (Limit aşıldı)"];
+
+  para_ver -> ask_more;
+  ask_more -> menu    [label="Evet"];
+  ask_more -> kart_iade [label="Hayır"];
+
+  kart_iade -> end;
+}
+BAŞLAT
+Kart_Tak()
+PIN_hatalari = 0
+
+while true:
+    PIN = PIN_Sor()
+    if PIN doğru ise:
+        goto ANA_MENU
+    else:
+        PIN_hatalari += 1
+        if PIN_hatalari == 3:
+            Kart_Bloke_Et()
+            Kart_Iade_Et()
+            BİTİR
+        else:
+            Uyar("Yanlış PIN, tekrar deneyin")
+            continue
+
+ANA_MENU:
+    Menü_Göster()
+    seçim = Kullanıcı_Seçimi()
+    if seçim == 1:
+        Bakiye_Göster()
+        goto BASKA_ISLEM
+    if seçim == 2:
+        Tutar = Tutar_Sor()
+        if Tutar > Bakiye:
+            Uyar("Yetersiz bakiye")
+            goto BASKA_ISLEM
+        if Tutar % 20 != 0:
+            Uyar("Tutar 20 TL'nin katı olmalı")
+            goto BASKA_ISLEM
+        if Tutar > Gunluk_Limit:
+            Uyar("Günlük limit aşıldı")
+            goto BASKA_ISLEM
+        Hesaptan_Düş(Tutar)
+        Para_Ver_ve_Fiş()
+        goto BASKA_ISLEM
+    if seçim == 3:
+        Kart_Iade_Et()
+        BİTİR
+
+BASKA_ISLEM:
+    cevap = Soru("Başka işlem yapmak ister misiniz? (E/H)")
+    if cevap == 'E':
+        goto ANA_MENU
+    else:
+        Kart_Iade_Et()
+        BİTİR
+olmamış akış semasını daha iyi yap dottaki
+digraph ATM {
+    rankdir=TB;
+    node [shape=rectangle, fontname="Arial"];
+
+    Start [label="Kart takılır ve PIN sorulur", shape=ellipse];
+    PinCheck [label="PIN doğru mu?", shape=diamond];
+    WrongPin [label="Hatalı PIN sayısını artır", shape=rectangle];
+    BlockCard [label="3 hatalı giriş -> Kart bloke", shape=rectangle];
+    Balance [label="Bakiye sorgulanır", shape=rectangle];
+    Amount [label="Çekilmek istenen tutar girilir", shape=rectangle];
+    EnoughBalance [label="Yeterli bakiye var mı?", shape=diamond];
+    Multiple20 [label="Tutar 20 TL’nin katı mı?", shape=diamond];
+    DailyLimit [label="Günlük limit aşıldı mı?", shape=diamond];
+    GiveMoney [label="Para verilir ve fiş çıkar", shape=rectangle];
+    Another [label="Başka işlem yapmak ister misiniz?", shape=diamond];
+    End [label="Kart iade edilir ve işlem biter", shape=ellipse];
+
+    // Bağlantılar
+    Start -> PinCheck;
+    PinCheck -> Balance [label="Evet"];
+    PinCheck -> WrongPin [label="Hayır"];
+    WrongPin -> PinCheck [label="Tekrar dene"];
+    WrongPin -> BlockCard [label="3. hata"];
+    BlockCard -> End;
+
+    Balance -> Amount;
+    Amount -> EnoughBalance;
+    EnoughBalance -> Multiple20 [label="Evet"];
+    EnoughBalance -> Amount [label="Yetersiz bakiye, tekrar gir"];
+
+    Multiple20 -> DailyLimit [label="Evet"];
+    Multiple20 -> Amount [label="Hayır, tekrar gir"];
+
+    DailyLimit -> GiveMoney [label="Hayır"];
+    DailyLimit -> Amount [label="Aşıldı, tekrar gir"];
+
+    GiveMoney -> Another;
+    Another -> Balance [label="Evet"];
+    Another -> End [label="Hayır"];
+}
+yetersiz bakiyesi olduğu zaman atm söylesin
+digraph ATM {
+    rankdir=TB;
+    node [shape=rectangle, fontname="Arial"];
+
+    Start [label="Kart takılır ve PIN sorulur", shape=ellipse];
+    PinCheck [label="PIN doğru mu?", shape=diamond];
+    WrongPin [label="Hatalı PIN sayısını artır", shape=rectangle];
+    BlockCard [label="3 hatalı giriş -> Kart bloke", shape=rectangle];
+    Balance [label="Bakiye sorgulanır", shape=rectangle];
+    Amount [label="Çekilmek istenen tutar girilir", shape=rectangle];
+    EnoughBalance [label="Yeterli bakiye var mı?", shape=diamond];
+    NoBalance [label="Yetersiz bakiye! Kullanıcıya mesaj göster", shape=rectangle];
+    Multiple20 [label="Tutar 20 TL’nin katı mı?", shape=diamond];
+    DailyLimit [label="Günlük limit aşıldı mı?", shape=diamond];
+    GiveMoney [label="Para verilir ve fiş çıkar", shape=rectangle];
+    Another [label="Başka işlem yapmak ister misiniz?", shape=diamond];
+    End [label="Kart iade edilir ve işlem biter", shape=ellipse];
+
+    // Bağlantılar
+    Start -> PinCheck;
+    PinCheck -> Balance [label="Evet"];
+    PinCheck -> WrongPin [label="Hayır"];
+    WrongPin -> PinCheck [label="Tekrar dene"];
+    WrongPin -> BlockCard [label="3. hata"];
+    BlockCard -> End;
+
+    Balance -> Amount;
+    Amount -> EnoughBalance;
+    EnoughBalance -> Multiple20 [label="Evet"];
+    EnoughBalance -> NoBalance [label="Hayır"];
+
+    NoBalance -> Amount [label="Yeni tutar gir"];
+
+    Multiple20 -> DailyLimit [label="Evet"];
+    Multiple20 -> Amount [label="Hayır, tekrar gir"];
+
+    DailyLimit -> GiveMoney [label="Hayır"];
+    DailyLimit -> Amount [label="Aşıldı, tekrar gir"];
+
+    GiveMoney -> Another;
+    Another -> Balance [label="Evet"];
+    Another -> End [label="Hayır"];
+}
+kusuratlı istedigi ve gunluk limitini asmasının sonucunda olusacak hataları da ekle
+digraph ATM {
+    rankdir=TB;
+    fontname="Arial";
+    node [shape=rectangle, fontname="Arial", style=filled, fillcolor="#B0E0E6"];
+
+    // Başlangıç ve bitiş
+    Start [label="Kart takılır ve PIN sorulur", shape=ellipse, fillcolor="#90EE90"];
+    End [label="Kart iade edilir ve işlem biter", shape=ellipse, fillcolor="#FF6347"];
+
+    // PIN işlemleri
+    PinCheck [label="PIN doğru mu?", shape=diamond, fillcolor="#FFD700"];
+    WrongPin [label="Hatalı PIN sayısını artır", fillcolor="#F0E68C"];
+    BlockCard [label="3 hatalı giriş -> Kart bloke", fillcolor="#FA8072"];
+
+    // Ana işlemler
+    Balance [label="Bakiye sorgulanır"];
+    Amount [label="Çekilmek istenen tutar girilir"];
+    EnoughBalance [label="Yeterli bakiye var mı?", shape=diamond, fillcolor="#FFD700"];
+    NoBalance [label="❗ Yetersiz bakiye! Kullanıcıya mesaj göster", fillcolor="#FFB6C1"];
+
+    Multiple20 [label="Tutar 20 TL’nin katı mı?", shape=diamond, fillcolor="#FFD700"];
+    NotMultiple20 [label="❗ Tutar 20 TL’nin katı olmalı! Uyarı ver", fillcolor="#FFB6C1"];
+
+    DailyLimit [label="Günlük limit aşıldı mı?", shape=diamond, fillcolor="#FFD700"];
+    LimitExceeded [label="❗ Günlük limit aşıldı! Kullanıcıya mesaj göster", fillcolor="#FFB6C1"];
+
+    GiveMoney [label="💵 Para verilir ve fiş çıkar"];
+    Another [label="Başka işlem yapmak ister misiniz?", shape=diamond, fillcolor="#FFD700"];
+
+    // Akış bağlantıları
+    Start -> PinCheck;
+
+    // PIN kontrol akışı
+    PinCheck -> Balance [label="Evet"];
+    PinCheck -> WrongPin [label="Hayır"];
+    WrongPin -> PinCheck [label="Tekrar dene"];
+    WrongPin -> BlockCard [label="3. hata"];
+    BlockCard -> End;
+
+    // Ana işlem akışı
+    Balance -> Amount;
+    Amount -> EnoughBalance;
+
+    // Bakiye kontrolü
+    EnoughBalance -> Multiple20 [label="Evet"];
+    EnoughBalance -> NoBalance [label="Hayır"];
+    NoBalance -> Amount [label="Yeni tutar gir"];
+
+    // 20 TL kat kontrolü
+    Multiple20 -> DailyLimit [label="Evet"];
+    Multiple20 -> NotMultiple20 [label="Hayır"];
+    NotMultiple20 -> Amount [label="Tekrar gir"];
+
+    // Günlük limit kontrolü
+    DailyLimit -> GiveMoney [label="Hayır"];
+    DailyLimit -> LimitExceeded [label="Evet"];
+    LimitExceeded -> Amount [label="Yeni tutar gir"];
+
+    // Para verme ve işlem sonu
+    GiveMoney -> Another;
+    Another -> Balance [label="Evet"];
+    Another -> End [label="Hayır"];
+}
+güzel bana  sözde kodunu hazırla
+BAŞLA
+
+Kart takılır
+PIN_giris_hak = 3
+
+TEKRAR:
+    PIN sor
+    eğer PIN doğru ise
+        bakiye_sorgula()
+        GİT İŞLEM
+    değilse
+        PIN_giris_hak = PIN_giris_hak - 1
+        eğer PIN_giris_hak == 0 ise
+            "Kart bloke edildi!" yazdır
+            BİTİR
+        değilse
+            "Hatalı PIN, tekrar deneyin" yazdır
+            GİT TEKRAR
+
+İŞLEM:
+    bakiye = hesap_bakiyesi
+    PARA_CEKME:
+
+        tutar = kullanıcıdan_tutar_al()
+
+        eğer tutar > bakiye ise
+            "Yetersiz bakiye!" yazdır
+            GİT PARA_CEKME
+
+        eğer tutar % 20 ≠ 0 ise
+            "Tutar 20 TL’nin katı olmalı!" yazdır
+            GİT PARA_CEKME
+
+        eğer tutar > günlük_limit ise
+            "Günlük limit aşıldı!" yazdır
+            GİT PARA_CEKME
+
+        bakiye = bakiye - tutar
+        "Para veriliyor..." yazdır
+        "Fiş çıkarılıyor..." yazdır
+
+        BAŞKA_ISLEM:
+            "Başka işlem yapmak ister misiniz? (E/H)" yazdır
+            cevap = al()
+
+            eğer cevap == 'E' ise
+                GİT İŞLEM
+            değilse
+                "Kart iade edildi." yazdır
+                BİTİR
+
+BİTİR
+
+
+
+
 
