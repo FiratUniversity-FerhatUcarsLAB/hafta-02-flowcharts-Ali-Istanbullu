@@ -1,64 +1,71 @@
-FONKSIYON ATM_ISLEM_AKISI()
+FONKSIYON ATM_Calistir()
 
-    1. KART_GIRISI: Kartı al
-    2. PIN_DENEME_SAYISI = 0
+    // 1. Kart Girişi ve PIN Kontrolü
+    KART_TAK()
+    PIN_HATALI_DENEME = 0
 
-    DONGU_PIN_GIRISI (PIN_DENEME_SAYISI < 3 OLDUĞU SÜRECE):
-        PIN_GIR: Kullanıcıdan PIN iste
+    TEKRARLA:
+        GIRILEN_PIN = PIN_ISTE()
         
-        EĞER (PIN_DOGRU_MU(GİRİLEN_PIN)):
-            Cikis_PIN_DONGUSU
+        EĞER PIN_DOGRULA(GIRILEN_PIN) VEYA (PIN_HATALI_DENEME >= 3):
+            DONGUYU_BITIR
+        
         DEĞİLSE:
-            PIN_DENEME_SAYISI = PIN_DENEME_SAYISI + 1
-    SON_DONGU
+            PIN_HATALI_DENEME += 1
+            
+    SON_TEKRARLA
 
-    EĞER (PIN_DENEME_SAYISI == 3):
-        KART_BLOKE_ET()
+    // 2. Başarısız PIN Kontrolü
+    EĞER PIN_HATALI_DENEME == 3:
+        HATA_GOSTER("Kartınız bloke edilmiştir.")
         KART_IADE_ET()
-        ISLEM_BITIR()
+        ISLEM_SONLANDIR()
+        GERI_DON
+
+    // 3. Ana İşlem Döngüsü
+    DONGU_ANA_MENU:
+        MENU_GOSTER("1: Bakiye Sorgula, 2: Para Çekme, 3: Çıkış")
+        SECIM = KULLANICIDAN_AL()
+        
+        EĞER SECIM == 1:
+            BAKIYE_GOSTER()
+            
+        DEĞİLSE EĞER SECIM == 2:
+            Para_Cekme_Islemi()
+            
+        DEĞİLSE EĞER SECIM == 3:
+            KART_IADE_ET()
+            ISLEM_SONLANDIR()
+            DONGUYU_BITIR
+            
+        // İşlem Sonrası Tekrar Sor (Döngü Koşulu)
+        EĞER CEVAP_AL("Başka işlem yapmak ister misiniz? (E/H)") == 'H':
+            KART_IADE_ET()
+            DONGUYU_BITIR
+    SON_DONGU
+    
+FONKSIYON Para_Cekme_Islemi()
+    TUTAR = KULLANICIDAN_AL("Çekilecek tutarı giriniz:")
+    
+    // Koşul Kontrolü 1: 20 TL Katları
+    EĞER TUTAR % 20 != 0:
+        HATA_GOSTER("Hata: Tutar 20 TL'nin katları olmalıdır.")
+        GERI_DON // Ana menüye dön
+    
+    // Koşul Kontrolü 2: Günlük Limit
+    EĞER TUTAR > GUNLUK_LIMIT_KALAN:
+        HATA_GOSTER("Hata: Günlük para çekme limitiniz aşıldı.")
         GERI_DON
     
-    // PIN Doğrulandı, Ana İşlem Döngüsüne Geç
-    DONGU_ANA_ISLEM (TRUE OLDUĞU SÜRECE):
-        EKRANA_YAZ("Lütfen işlem seçiniz: 1. Para Çekme, 2. Bakiye Sorgulama, 3. Çıkış")
-        SECIM = KULLANICIDAN_AL()
+    // Koşul Kontrolü 3: Yetersiz Bakiye
+    EĞER TUTAR > HESAP_BAKIYESI:
+        HATA_GOSTER("Hata: Yetersiz bakiye.")
+        GERI_DON
 
-        EĞER (SECIM == 1): // Para Çekme
-            TUTAR = KULLANICIDAN_AL("Çekmek istediğiniz tutarı giriniz:")
-            
-            // Koşul Kontrolleri
-            EĞER (TUTAR % 20 != 0):
-                EKRANA_YAZ("Hata: Tutar 20 TL'nin katları olmalıdır.")
-                DEVAM_ET // Döngüye devam et, tekrar menüye dön
-            
-            EĞER (TUTAR > HESAP_BAKIYESI):
-                EKRANA_YAZ("Hata: Yetersiz bakiye.")
-                DEVAM_ET
+    // Başarılı İşlem
+    HESAP_BAKIYESI -= TUTAR
+    GUNLUK_LIMIT_KALAN -= TUTAR
+    PARA_VER(TUTAR)
+    FIS_CIKAR("İşlem Başarılı.")
 
-            EĞER (TUTAR > GUNLUK_LIMIT):
-                EKRANA_YAZ("Hata: Günlük limit aşıldı.")
-                DEVAM_ET
-            
-            // Başarılı Çekme
-            HESAP_BAKIYESI = HESAP_BAKIYESI - TUTAR
-            PARA_VER(TUTAR)
-            FİS_CIKAR("İşlem Başarılı: " + TUTAR + " TL")
-
-        EĞER (SECIM == 2): // Bakiye Sorgulama
-            EKRANA_YAZ("Hesap Bakiyeniz: " + HESAP_BAKIYESI + " TL")
-
-        EĞER (SECIM == 3): // Çıkış
-            EKRANA_YAZ("Kartınız iade ediliyor.")
-            KART_IADE_ET()
-            ISLEM_BITIR()
-            GERI_DON
-
-        // İşlem Sonrası Tekrar Sor (Asıl Döngü Sorusu)
-        EKRANA_YAZ("Başka işlem yapmak ister misiniz? (E/H)")
-        CEVAP = KULLANICIDAN_AL()
-        
-        EĞER (CEVAP == 'H'):
-            Cikis_ANA_ISLEM_DONGUSU
-    SON_DONGU
-    
 SON_FONKSIYON
