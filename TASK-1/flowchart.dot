@@ -1,1 +1,64 @@
+digraph ATM {
+    rankdir=TB;
+    fontname="Arial";
+    node [shape=rectangle, fontname="Arial", style=filled, fillcolor="#B0E0E6"];
+
+    // Başlangıç ve bitiş
+    Start [label="Kart takılır ve PIN sorulur", shape=ellipse, fillcolor="#90EE90"];
+    End [label="Kart iade edilir ve işlem biter", shape=ellipse, fillcolor="#FF6347"];
+
+    // PIN işlemleri
+    PinCheck [label="PIN doğru mu?", shape=diamond, fillcolor="#FFD700"];
+    WrongPin [label="Hatalı PIN sayısını artır", fillcolor="#F0E68C"];
+    BlockCard [label="3 hatalı giriş -> Kart bloke", fillcolor="#FA8072"];
+
+    // Ana işlemler
+    Balance [label="Bakiye sorgulanır"];
+    Amount [label="Çekilmek istenen tutar girilir"];
+    EnoughBalance [label="Yeterli bakiye var mı?", shape=diamond, fillcolor="#FFD700"];
+    NoBalance [label="❗ Yetersiz bakiye! Kullanıcıya mesaj göster", fillcolor="#FFB6C1"];
+
+    Multiple20 [label="Tutar 20 TL’nin katı mı?", shape=diamond, fillcolor="#FFD700"];
+    NotMultiple20 [label="❗ Tutar 20 TL’nin katı olmalı! Uyarı ver", fillcolor="#FFB6C1"];
+
+    DailyLimit [label="Günlük limit aşıldı mı?", shape=diamond, fillcolor="#FFD700"];
+    LimitExceeded [label="❗ Günlük limit aşıldı! Kullanıcıya mesaj göster", fillcolor="#FFB6C1"];
+
+    GiveMoney [label="💵 Para verilir ve fiş çıkar"];
+    Another [label="Başka işlem yapmak ister misiniz?", shape=diamond, fillcolor="#FFD700"];
+
+    // Akış bağlantıları
+    Start -> PinCheck;
+
+    // PIN kontrol akışı
+    PinCheck -> Balance [label="Evet"];
+    PinCheck -> WrongPin [label="Hayır"];
+    WrongPin -> PinCheck [label="Tekrar dene"];
+    WrongPin -> BlockCard [label="3. hata"];
+    BlockCard -> End;
+
+    // Ana işlem akışı
+    Balance -> Amount;
+    Amount -> EnoughBalance;
+
+    // Bakiye kontrolü
+    EnoughBalance -> Multiple20 [label="Evet"];
+    EnoughBalance -> NoBalance [label="Hayır"];
+    NoBalance -> Amount [label="Yeni tutar gir"];
+
+    // 20 TL kat kontrolü
+    Multiple20 -> DailyLimit [label="Evet"];
+    Multiple20 -> NotMultiple20 [label="Hayır"];
+    NotMultiple20 -> Amount [label="Tekrar gir"];
+
+    // Günlük limit kontrolü
+    DailyLimit -> GiveMoney [label="Hayır"];
+    DailyLimit -> LimitExceeded [label="Evet"];
+    LimitExceeded -> Amount [label="Yeni tutar gir"];
+
+    // Para verme ve işlem sonu
+    GiveMoney -> Another;
+    Another -> Balance [label="Evet"];
+    Another -> End [label="Hayır"];
+}
 
