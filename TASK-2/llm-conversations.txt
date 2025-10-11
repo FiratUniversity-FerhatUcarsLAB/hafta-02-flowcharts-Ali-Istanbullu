@@ -1,1 +1,692 @@
+Online Alışveriş Sepeti Kullanıcı giri¸s kontrol¨u (ko¸sul)
+Ur¨un kategorileri arasında gezinme (d¨ong¨u) ¨
+Ur¨un sepete ekleme ¨
+Stok kontrol¨u (ko¸sul)
+Sepeti g¨or¨unt¨uleme ve d¨uzenleme (d¨ong¨u)
+˙
+Indirim kodu uygulanabilir (ko¸sul)
+Minimum 50 TL kontrol¨u (ko¸sul)
+Kargo ¨ucreti hesaplama (ko¸sul: ¿200 TL ¨ucretsiz)
+Odeme y¨ontemi se¸cimi (ko¸sul) ¨
+Sipari¸s onayı bunun bana sözdekodunu dot kodunu ve acıklama kısmını yap ince seyler düşün sistemde acık olmasın düzgün bastan sona dogru yukarıdan asagı
+Bu akışı temsil eden sözde kod (pseudocode), DOT (Graphviz) kodu ve aşamaların açıklamalarını içeren bir planı aşağıda bulabilirsiniz. Sistemin düzgün ve anlaşılır olması için adımları mantıksal bir sıra ile düzenledim.
+
+1. Sözde Kod (Pseudocode)
+BASLA OnlineAlisverisSistemi
+
+    // Kullanıcı Girişi
+    EKRANA_YAZ "Alışveriş Sepeti Sistemi"
+    DOGRULANDI = YANLIS
+    IKEN (DOGRULANDI == YANLIS) DO
+        EKRANA_YAZ "Kullanıcı Adı ve Şifre Giriniz:"
+        KULLANICI_GIRISI = KULLANICI_GIRISI_AL()
+        DOGRULANDI = KULLANICI_GIRIS_KONTROLU(KULLANICI_GIRISI) // Koşul
+        EGER (DOGRULANDI == YANLIS) O ZAMAN
+            EKRANA_YAZ "Hatalı Giriş. Tekrar Deneyin."
+        SON
+    SON
+
+    // Ürün Gezinme ve Sepete Ekleme
+    DEVAM_ET = DOGRU
+    IKEN (DEVAM_ET == DOGRU) DO // Döngü
+        EKRANA_YAZ "Ürün Kategorilerini Listele (1: Giyim, 2: Elektronik, ...)"
+        KATEGORI_SECIMI = KULLANICI_SECIMI_AL()
+        URUNLER = URUNLERI_GETIR(KATEGORI_SECIMI)
+        EKRANA_YAZ "Ürünleri Listele ve Seçiniz."
+
+        URUN_SECIMI = KULLANICI_SECIMI_AL()
+        MIKTAR = MIKTAR_GIRISI_AL()
+
+        // Stok Kontrolü
+        EGER (STOK_KONTROL(URUN_SECIMI, MIKTAR) == DOGRU) O ZAMAN // Koşul
+            SEPETE_EKLE(URUN_SECIMI, MIKTAR)
+            EKRANA_YAZ "Ürün sepete eklendi."
+        DIGER DURUMDA
+            EKRANA_YAZ "Yetersiz Stok. Lütfen Miktarı Azaltın."
+        SON
+
+        EKRANA_YAZ "Alışverişe Devam Etmek İster Misiniz? (E/H)"
+        CEVAP = KULLANICI_CEVABI_AL()
+        EGER (CEVAP == 'H') O ZAMAN
+            DEVAM_ET = YANLIS
+        SON
+    SON
+
+    // Sepeti Görüntüleme ve Düzenleme
+    SEPET_DUZENLE = DOGRU
+    IKEN (SEPET_DUZENLE == DOGRU) DO // Döngü
+        SEPETI_GORUNTULE()
+        EKRANA_YAZ "Sepeti düzenlemek ister misiniz? (1: Ürün Sil, 2: Miktar Güncelle, 3: Devam Et)"
+        DUZENLEME_SECIMI = KULLANICI_SECIMI_AL()
+
+        EGER (DUZENLEME_SECIMI == 1) O ZAMAN
+            URUN_SIL()
+        DIGER DURUMDA EGER (DUZENLEME_SECIMI == 2) O ZAMAN
+            MIKTAR_GUNCELLE()
+        DIGER DURUMDA EGER (DUZENLEME_SECIMI == 3) O ZAMAN
+            SEPET_DUZENLE = YANLIS
+        SON
+    SON
+
+    SEPET_TOPLAMI = SEPET_TUTARI_HESAPLA()
+
+    // Minimum Tutar Kontrolü
+    EGER (SEPET_TOPLAMI < 50) O ZAMAN // Koşul
+        EKRANA_YAZ "Siparişi tamamlamak için minimum sepet tutarı 50 TL olmalıdır. Lütfen ürün ekleyin."
+        CIK
+    SON
+
+    // İndirim Kodu Uygulama
+    INDIM_UYGULANDI = YANLIS
+    EKRANA_YAZ "İndirim Kodu Uygulamak İster Misiniz? (E/H)"
+    EGER (KULLANICI_CEVABI_AL() == 'E') O ZAMAN
+        EKRANA_YAZ "İndirim Kodunu Giriniz:"
+        KOD = KOD_GIRISI_AL()
+        EGER (KOD_GECERLI_MI(KOD) == DOGRU) O ZAMAN // Koşul
+            SEPET_TOPLAMI = INDIRIMI_UYGULA(SEPET_TOPLAMI, KOD)
+            INDIM_UYGULANDI = DOGRU
+            EKRANA_YAZ "İndirim başarıyla uygulandı."
+        DIGER DURUMDA
+            EKRANA_YAZ "Geçersiz İndirim Kodu."
+        SON
+    SON
+
+    // Kargo Ücreti Hesaplama
+    KARGO_UCRETI = 15.00
+    EGER (SEPET_TOPLAMI > 200.00) O ZAMAN // Koşul
+        KARGO_UCRETI = 0.00
+        EKRANA_YAZ "200 TL üzeri alışverişe ücretsiz kargo kazandınız."
+    SON
+    TOPLAM_ODENECEK = SEPET_TOPLAMI + KARGO_UCRETI
+
+    // Ödeme Yöntemi Seçimi
+    ODEME_SECIMI_YAPILDI = YANLIS
+    IKEN (ODEME_SECIMI_YAPILDI == YANLIS) DO
+        EKRANA_YAZ "Ödeme Yöntemini Seçiniz (1: Kredi Kartı, 2: Havale, 3: Kapıda Ödeme):"
+        ODEME_YONTEMI = KULLANICI_SECIMI_AL()
+        EGER (ODEME_YONTEMI == 1 VEYA ODEME_YONTEMI == 2 VEYA ODEME_YONTEMI == 3) O ZAMAN // Koşul
+            ODEME_SECIMI_YAPILDI = DOGRU
+        DIGER DURUMDA
+            EKRANA_YAZ "Geçersiz ödeme yöntemi."
+        SON
+    SON
+
+    // Sipariş Onayı
+    EKRANA_YAZ "Toplam Ödenecek Tutar: " + TOPLAM_ODENECEK + " TL"
+    EKRANA_YAZ "Seçilen Ödeme Yöntemi: " + ODEME_YONTEMI
+    EKRANA_YAZ "Siparişi Onaylıyor Musunuz? (E/H)"
+    EGER (KULLANICI_CEVABI_AL() == 'E') O ZAMAN
+        SIPARISI_OLUSTUR(SEPET, TOPLAM_ODENECEK, ODEME_YONTEMI)
+        EKRANA_YAZ "Siparişiniz Başarıyla Oluşturuldu!"
+    DIGER DURUMDA
+        EKRANA_YAZ "Sipariş İptal Edildi."
+    SON
+
+BIT OnlineAlisverisSistemi
+Bu akışı temsil eden sözde kod (pseudocode), DOT (Graphviz) kodu ve aşamaların açıklamalarını içeren bir planı aşağıda bulabilirsiniz. Sistemin düzgün ve anlaşılır olması için adımları mantıksal bir sıra ile düzenledim.
+
+1. Sözde Kod (Pseudocode)
+Kod snippet'i
+
+BASLA OnlineAlisverisSistemi
+
+    // Kullanıcı Girişi
+    EKRANA_YAZ "Alışveriş Sepeti Sistemi"
+    DOGRULANDI = YANLIS
+    IKEN (DOGRULANDI == YANLIS) DO
+        EKRANA_YAZ "Kullanıcı Adı ve Şifre Giriniz:"
+        KULLANICI_GIRISI = KULLANICI_GIRISI_AL()
+        DOGRULANDI = KULLANICI_GIRIS_KONTROLU(KULLANICI_GIRISI) // Koşul
+        EGER (DOGRULANDI == YANLIS) O ZAMAN
+            EKRANA_YAZ "Hatalı Giriş. Tekrar Deneyin."
+        SON
+    SON
+
+    // Ürün Gezinme ve Sepete Ekleme
+    DEVAM_ET = DOGRU
+    IKEN (DEVAM_ET == DOGRU) DO // Döngü
+        EKRANA_YAZ "Ürün Kategorilerini Listele (1: Giyim, 2: Elektronik, ...)"
+        KATEGORI_SECIMI = KULLANICI_SECIMI_AL()
+        URUNLER = URUNLERI_GETIR(KATEGORI_SECIMI)
+        EKRANA_YAZ "Ürünleri Listele ve Seçiniz."
+
+        URUN_SECIMI = KULLANICI_SECIMI_AL()
+        MIKTAR = MIKTAR_GIRISI_AL()
+
+        // Stok Kontrolü
+        EGER (STOK_KONTROL(URUN_SECIMI, MIKTAR) == DOGRU) O ZAMAN // Koşul
+            SEPETE_EKLE(URUN_SECIMI, MIKTAR)
+            EKRANA_YAZ "Ürün sepete eklendi."
+        DIGER DURUMDA
+            EKRANA_YAZ "Yetersiz Stok. Lütfen Miktarı Azaltın."
+        SON
+
+        EKRANA_YAZ "Alışverişe Devam Etmek İster Misiniz? (E/H)"
+        CEVAP = KULLANICI_CEVABI_AL()
+        EGER (CEVAP == 'H') O ZAMAN
+            DEVAM_ET = YANLIS
+        SON
+    SON
+
+    // Sepeti Görüntüleme ve Düzenleme
+    SEPET_DUZENLE = DOGRU
+    IKEN (SEPET_DUZENLE == DOGRU) DO // Döngü
+        SEPETI_GORUNTULE()
+        EKRANA_YAZ "Sepeti düzenlemek ister misiniz? (1: Ürün Sil, 2: Miktar Güncelle, 3: Devam Et)"
+        DUZENLEME_SECIMI = KULLANICI_SECIMI_AL()
+
+        EGER (DUZENLEME_SECIMI == 1) O ZAMAN
+            URUN_SIL()
+        DIGER DURUMDA EGER (DUZENLEME_SECIMI == 2) O ZAMAN
+            MIKTAR_GUNCELLE()
+        DIGER DURUMDA EGER (DUZENLEME_SECIMI == 3) O ZAMAN
+            SEPET_DUZENLE = YANLIS
+        SON
+    SON
+
+    SEPET_TOPLAMI = SEPET_TUTARI_HESAPLA()
+
+    // Minimum Tutar Kontrolü
+    EGER (SEPET_TOPLAMI < 50) O ZAMAN // Koşul
+        EKRANA_YAZ "Siparişi tamamlamak için minimum sepet tutarı 50 TL olmalıdır. Lütfen ürün ekleyin."
+        CIK
+    SON
+
+    // İndirim Kodu Uygulama
+    INDIM_UYGULANDI = YANLIS
+    EKRANA_YAZ "İndirim Kodu Uygulamak İster Misiniz? (E/H)"
+    EGER (KULLANICI_CEVABI_AL() == 'E') O ZAMAN
+        EKRANA_YAZ "İndirim Kodunu Giriniz:"
+        KOD = KOD_GIRISI_AL()
+        EGER (KOD_GECERLI_MI(KOD) == DOGRU) O ZAMAN // Koşul
+            SEPET_TOPLAMI = INDIRIMI_UYGULA(SEPET_TOPLAMI, KOD)
+            INDIM_UYGULANDI = DOGRU
+            EKRANA_YAZ "İndirim başarıyla uygulandı."
+        DIGER DURUMDA
+            EKRANA_YAZ "Geçersiz İndirim Kodu."
+        SON
+    SON
+
+    // Kargo Ücreti Hesaplama
+    KARGO_UCRETI = 15.00
+    EGER (SEPET_TOPLAMI > 200.00) O ZAMAN // Koşul
+        KARGO_UCRETI = 0.00
+        EKRANA_YAZ "200 TL üzeri alışverişe ücretsiz kargo kazandınız."
+    SON
+    TOPLAM_ODENECEK = SEPET_TOPLAMI + KARGO_UCRETI
+
+    // Ödeme Yöntemi Seçimi
+    ODEME_SECIMI_YAPILDI = YANLIS
+    IKEN (ODEME_SECIMI_YAPILDI == YANLIS) DO
+        EKRANA_YAZ "Ödeme Yöntemini Seçiniz (1: Kredi Kartı, 2: Havale, 3: Kapıda Ödeme):"
+        ODEME_YONTEMI = KULLANICI_SECIMI_AL()
+        EGER (ODEME_YONTEMI == 1 VEYA ODEME_YONTEMI == 2 VEYA ODEME_YONTEMI == 3) O ZAMAN // Koşul
+            ODEME_SECIMI_YAPILDI = DOGRU
+        DIGER DURUMDA
+            EKRANA_YAZ "Geçersiz ödeme yöntemi."
+        SON
+    SON
+
+    // Sipariş Onayı
+    EKRANA_YAZ "Toplam Ödenecek Tutar: " + TOPLAM_ODENECEK + " TL"
+    EKRANA_YAZ "Seçilen Ödeme Yöntemi: " + ODEME_YONTEMI
+    EKRANA_YAZ "Siparişi Onaylıyor Musunuz? (E/H)"
+    EGER (KULLANICI_CEVABI_AL() == 'E') O ZAMAN
+        SIPARISI_OLUSTUR(SEPET, TOPLAM_ODENECEK, ODEME_YONTEMI)
+        EKRANA_YAZ "Siparişiniz Başarıyla Oluşturuldu!"
+    DIGER DURUMDA
+        EKRANA_YAZ "Sipariş İptal Edildi."
+    SON
+
+BIT OnlineAlisverisSistemi
+2. DOT Kodu (Graphviz)
+Bu kod, sistem akışını bir şema (akış şeması) olarak görselleştirmek için kullanılır. Her bir adım, koşul ve döngü açıkça belirtilmiştir.
+digraph OnlineAlisveris {
+    rankdir=TB;
+    node [shape=box, style="filled", fillcolor="lightblue"];
+
+    // Başlangıç ve Giriş
+    A0 [label="Başla", shape=oval, fillcolor="greenyellow"];
+    A1 [label="Kullanıcı Girişi (Kullanıcı Adı/Şifre)", shape=box];
+    A2 [label="Giriş Kontrolü?", shape=diamond, fillcolor="yellow"];
+    A3 [label="Hatalı Giriş\n(Döngü Başı)", shape=box];
+
+    // Alışveriş Döngüsü
+    B1 [label="Ürün Kategorileri Arasında Gezinme\n(Döngü Başı)", shape=box];
+    B2 [label="Ürün Seçimi ve Miktar Girişi", shape=box];
+    B3 [label="Stok Kontrolü Yeterli mi?", shape=diamond, fillcolor="yellow"];
+    B4 [label="Sepete Ekle", shape=box];
+    B5 [label="Yetersiz Stok", shape=box];
+    B6 [label="Alışverişe Devam Et?", shape=diamond, fillcolor="yellow"];
+
+    // Sepet İşlemleri
+    C1 [label="Sepeti Görüntüle ve Düzenle\n(Döngü Başı)", shape=box];
+    C2 [label="Düzenlemeye Devam Et?", shape=diamond, fillcolor="yellow"];
+    C3 [label="Minimum 50 TL Kontrolü?", shape=diamond, fillcolor="yellow"];
+    C4 [label="Alışverişi İptal Et", shape=box, fillcolor="salmon"];
+
+    // İndirim ve Kargo
+    D1 [label="İndirim Kodu Uygulama?", shape=diamond, fillcolor="yellow"];
+    D2 [label="İndirimi Uygula", shape=box];
+    D3 [label="Geçersiz Kod", shape=box];
+    D4 [label="Kargo Ücreti Hesaplama\n(Sepet > 200 TL?)", shape=diamond, fillcolor="yellow"];
+    D5 [label="Kargo: 0 TL", shape=box];
+    D6 [label="Kargo: 15 TL", shape=box];
+
+    // Ödeme ve Onay
+    E1 [label="Ödeme Yöntemi Seçimi\n(Geçerli mi?)", shape=diamond, fillcolor="yellow"];
+    E2 [label="Geçersiz Ödeme (Döngü Başı)", shape=box];
+    E3 [label="Sipariş Onayı?", shape=diamond, fillcolor="yellow"];
+    E4 [label="Sipariş Oluştur ve Tamamla", shape=box, fillcolor="lightgreen"];
+    E5 [label="Sipariş İptal Edildi", shape=box, fillcolor="salmon"];
+    F1 [label="Bitir", shape=oval, fillcolor="greenyellow"];
+
+
+    // Akış Bağlantıları
+    A0 -> A1;
+    A1 -> A2;
+    A2 -> B1 [label="Evet/Doğru"];
+    A2 -> A3 [label="Hayır/Yanlış"];
+    A3 -> A1; // Giriş Kontrol Döngüsü
+
+    B1 -> B2;
+    B2 -> B3;
+    B3 -> B4 [label="Evet"];
+    B3 -> B5 [label="Hayır"];
+    B4 -> B6;
+    B5 -> B6;
+    B6 -> B1 [label="Evet"]; // Alışveriş Döngüsü
+    B6 -> C1 [label="Hayır"];
+
+    C1 -> C2;
+    C2 -> C1 [label="Evet"]; // Sepet Düzenleme Döngüsü
+    C2 -> C3 [label="Hayır"];
+
+    C3 -> D1 [label="Evet (>= 50 TL)"];
+    C3 -> C4 [label="Hayır (< 50 TL)"];
+
+    D1 -> D2 [label="Evet (Kod Geçerli)"];
+    D1 -> D3 [label="Hayır (Kod Yok/Geçersiz)"];
+    D2 -> D4;
+    D3 -> D4;
+
+    D4 -> D5 [label="Evet (> 200 TL)"];
+    D4 -> D6 [label="Hayır"];
+    D5 -> E1;
+    D6 -> E1;
+
+    E1 -> E3 [label="Evet (Geçerli)"];
+    E1 -> E2 [label="Hayır"];
+    E2 -> E1; // Ödeme Seçim Döngüsü
+
+    E3 -> E4 [label="Evet"];
+    E3 -> E5 [label="Hayır"];
+
+    C4 -> F1;
+    E4 -> F1;
+    E5 -> F1;
+}
+dot kodu olmamış yeterli stok yoksa kullnıcıya mesaj gönder ve sistemin basına at yeni secim yapsın bide min 50 tutarı nın evet hayırla sorarken yanlarına if kosullarını koymussun bunu baklava dilimine koy içine koy
+BASLA OnlineAlisverisSistemi
+
+    // Kullanıcı Girişi (Aşaması Aynı Kaldı)
+    ... (A1 - A3 arasındaki kullanıcı giriş kontrolü kodları) ...
+
+    // Ürün Gezinme ve Sepete Ekleme
+    DEVAM_ET = DOGRU
+    IKEN (DEVAM_ET == DOGRU) DO // Döngü
+        // YENİDEN_BASLAT: Bu etiket stok yetersizliğinde buraya dönülmesini sağlar.
+        EKRANA_YAZ "Ürün Kategorilerini Listele..."
+        KATEGORI_SECIMI = KULLANICI_SECIMI_AL()
+        EKRANA_YAZ "Ürünleri Listele ve Seçiniz."
+        URUN_SECIMI = KULLANICI_SECIMI_AL()
+        MIKTAR = MIKTAR_GIRISI_AL()
+
+        // Stok Kontrolü
+        EGER (STOK_KONTROL(URUN_SECIMI, MIKTAR) == DOGRU) O ZAMAN // Koşul
+            SEPETE_EKLE(URUN_SECIMI, MIKTAR)
+            EKRANA_YAZ "Ürün sepete eklendi."
+        DIGER DURUMDA
+            EKRANA_YAZ "Yetersiz Stok! Lütfen farklı bir ürün seçin veya miktarı azaltın."
+            DEVAM_ET = YANLIS // Dış döngüden çıkış için bir sonraki kontrolü tetikle
+            GIT YENIDEN_BASLA // Kullanıcıya yeni seçim yapması için başa dön
+        SON
+
+        EKRANA_YAZ "Alışverişe Devam Etmek İster Misiniz? (E/H)"
+        CEVAP = KULLANICI_CEVABI_AL()
+        EGER (CEVAP == 'H') O ZAMAN
+            DEVAM_ET = YANLIS
+        SON
+    SON
+
+    // Sepet İşlemleri (Aşaması Aynı Kaldı)
+    ... (C1 - C2 arasındaki sepet görüntüleme/düzenleme kodları) ...
+
+    SEPET_TOPLAMI = SEPET_TUTARI_HESAPLA()
+
+    // Minimum Tutar Kontrolü (C3)
+    EGER (SEPET_TOPLAMI < 50) O ZAMAN // Koşul
+        EKRANA_YAZ "Siparişi tamamlamak için minimum sepet tutarı 50 TL olmalıdır. Lütfen ürün ekleyin."
+        CIK // VEYA 'GIT YENIDEN_BASLA' ile sepet düzenlemeye geri dönülebilir, CIK şimdilik sistemden çıkış yapar.
+    SON
+
+    // Diğer Aşamalar (Aynı Kaldı)
+    ... (D1 - F1 arasındaki indirim, kargo ve ödeme kodları) ...
+
+BIT OnlineAlisverisSistemi
+digraph OnlineAlisveris {
+    rankdir=TB;
+    node [shape=box, style="filled", fillcolor="lightblue"];
+
+    // Başlangıç ve Giriş
+    A0 [label="Başla", shape=oval, fillcolor="greenyellow"];
+    A1 [label="Kullanıcı Girişi", shape=box];
+    A2 [label="Giriş Doğru mu? \n(Koşul)", shape=diamond, fillcolor="yellow"];
+    A3 [label="Hatalı Giriş", shape=box];
+
+    // Alışveriş Döngüsü
+    B1 [label="Ürün Kategorileri Arasında Gezinme\n(Döngü Başı)", shape=box];
+    B2 [label="Ürün Seçimi ve Miktar Girişi", shape=box];
+    B3 [label="Stok Kontrolü Yeterli mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    B4 [label="Sepete Ekle", shape=box];
+    B5 [label="Yetersiz Stok! Yeni Seçim Yap", shape=box, fillcolor="salmon"];
+    B6 [label="Alışverişe Devam Et?", shape=diamond, fillcolor="yellow"];
+
+    // Sepet İşlemleri
+    C1 [label="Sepeti Görüntüle ve Düzenle\n(Döngü Başı)", shape=box];
+    C2 [label="Düzenlemeye Devam Et?", shape=diamond, fillcolor="yellow"];
+    C3 [label="Sepet Tutarı Min 50 TL mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    C4 [label="Alışverişi İptal Et/Çıkış", shape=box, fillcolor="salmon"];
+
+    // İndirim ve Kargo
+    D1 [label="İndirim Kodu Uygulanacak mı?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    D2 [label="İndirimi Uygula", shape=box];
+    D3 [label="Kod Yok/Geçersiz", shape=box];
+    D4 [label="Kargo Ücreti: Sepet > 200 TL mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    D5 [label="Kargo: 0 TL", shape=box];
+    D6 [label="Kargo: 15 TL", shape=box];
+
+    // Ödeme ve Onay
+    E1 [label="Ödeme Yöntemi Seçimi Geçerli mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    E2 [label="Geçersiz Ödeme", shape=box];
+    E3 [label="Siparişi Onaylıyor musunuz?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    E4 [label="Sipariş Oluşturuldu", shape=box, fillcolor="lightgreen"];
+    E5 [label="Sipariş İptal Edildi", shape=box, fillcolor="salmon"];
+    F1 [label="Bitir", shape=oval, fillcolor="greenyellow"];
+
+
+    // Akış Bağlantıları
+    A0 -> A1;
+    A1 -> A2;
+    A2 -> B1 [label="Evet"];
+    A2 -> A3 [label="Hayır"];
+    A3 -> A1; // Giriş Kontrol Döngüsü
+
+    B1 -> B2;
+    B2 -> B3;
+    B3 -> B4 [label="Evet"];
+    B4 -> B6;
+    
+    // Yetersiz stok durumunda B1'e geri dönme
+    B3 -> B5 [label="Hayır"]; 
+    B5 -> B1; // Kullanıcıyı yeni seçime yönlendir
+
+    B6 -> B1 [label="Evet"]; // Alışveriş Döngüsü
+    B6 -> C1 [label="Hayır"];
+
+    C1 -> C2;
+    C2 -> C1 [label="Evet"]; // Sepet Düzenleme Döngüsü
+    C2 -> C3 [label="Hayır"];
+
+    C3 -> D1 [label="Evet (>= 50 TL)"];
+    C3 -> C4 [label="Hayır (< 50 TL)"];
+
+    D1 -> D2 [label="Evet"];
+    D1 -> D3 [label="Hayır"];
+    D2 -> D4;
+    D3 -> D4;
+
+    D4 -> D5 [label="Evet"];
+    D4 -> D6 [label="Hayır"];
+    D5 -> E1;
+    D6 -> E1;
+
+    E1 -> E3 [label="Evet"];
+    E1 -> E2 [label="Hayır"];
+    E2 -> E1; // Ödeme Seçim Döngüsü
+
+    E3 -> E4 [label="Evet"];
+    E3 -> E5 [label="Hayır"];
+
+    C4 -> F1;
+    E4 -> F1;
+    E5 -> F1;
+}
+olmadı min 50 degerinde alısveriş yoksa sistemden atmasın dongunun basına atsınkı yeni alısveriş yapsın
+BASLA OnlineAlisverisSistemi
+
+    // Kullanıcı Girişi (Aşaması Aynı Kaldı)
+    ... (A1 - A3 arasındaki kullanıcı giriş kontrolü kodları) ...
+
+    // Ürün Gezinme ve Sepete Ekleme
+    DEVAM_ET = DOGRU
+    IKEN (DEVAM_ET == DOGRU) DO // Döngü (B1)
+        URUNE_DON: // <--- Yetersiz stok veya Min 50 TL durumunda buraya dönecek
+        EKRANA_YAZ "Ürün Kategorilerini Listele..."
+        ... (B2 kodu) ...
+        
+        // Stok Kontrolü
+        EGER (STOK_KONTROL(URUN_SECIMI, MIKTAR) == DOGRU) O ZAMAN
+            SEPETE_EKLE(URUN_SECIMI, MIKTAR)
+            EKRANA_YAZ "Ürün sepete eklendi."
+        DIGER DURUMDA
+            EKRANA_YAZ "Yetersiz Stok! Lütfen farklı bir ürün seçin veya miktarı azaltın."
+            GIT URUNE_DON // Stok yetersizse hemen ürün seçimine dön
+        SON
+
+        EKRANA_YAZ "Alışverişe Devam Etmek İster Misiniz? (E/H)"
+        ... (B6 kodu) ...
+    SON
+
+    // Sepet İşlemleri (C1 - C2)
+    SEPET_DUZENLE = DOGRU
+    IKEN (SEPET_DUZENLE == DOGRU) DO
+        ... (Sepet düzenleme kodları) ...
+    SON
+
+    SEPET_TOPLAMI = SEPET_TUTARI_HESAPLA()
+
+    // Minimum Tutar Kontrolü (C3) - REVİZE EDİLDİ
+    EGER (SEPET_TOPLAMI < 50) O ZAMAN // Koşul
+        EKRANA_YAZ "UYARI: Siparişi tamamlamak için minimum sepet tutarı 50 TL olmalıdır."
+        EKRANA_YAZ "Lütfen ürün eklemek için tekrar alışverişe başlayın."
+        GIT URUNE_DON // Min 50 TL yoksa, ürüne dönme etiketine yönlendir
+    SON
+    
+    // Diğer Aşamalar (D1 - F1 arasındaki indirim, kargo ve ödeme kodları)
+    ...
+
+BIT OnlineAlisverisSistemi
+digraph OnlineAlisveris {
+    rankdir=TB;
+    node [shape=box, style="filled", fillcolor="lightblue"];
+
+    // Başlangıç ve Giriş
+    A0 [label="Başla", shape=oval, fillcolor="greenyellow"];
+    A1 [label="Kullanıcı Girişi", shape=box];
+    A2 [label="Giriş Doğru mu? \n(Koşul)", shape=diamond, fillcolor="yellow"];
+    A3 [label="Hatalı Giriş", shape=box];
+
+    // Alışveriş Döngüsü
+    B1 [label="Ürün Kategorileri Arasında Gezinme\n(Döngü Başı)", shape=box];
+    B2 [label="Ürün Seçimi ve Miktar Girişi", shape=box];
+    B3 [label="Stok Kontrolü Yeterli mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    B4 [label="Sepete Ekle", shape=box];
+    B5 [label="Yetersiz Stok! Yeni Seçim Yap", shape=box, fillcolor="salmon"];
+    B6 [label="Alışverişe Devam Et?", shape=diamond, fillcolor="yellow"];
+
+    // Sepet İşlemleri
+    C1 [label="Sepeti Görüntüle ve Düzenle\n(Döngü Başı)", shape=box];
+    C2 [label="Düzenlemeye Devam Et?", shape=diamond, fillcolor="yellow"];
+    C3 [label="Sepet Tutarı Min 50 TL mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    C4 [label="Sipariş İptal Edildi/Çıkış", shape=box, fillcolor="salmon"]; // Bu düğüm artık sadece sipariş iptalini temsil ediyor.
+
+    // İndirim ve Kargo
+    D1 [label="İndirim Kodu Uygulanacak mı?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    D2 [label="İndirimi Uygula", shape=box];
+    D3 [label="Kod Yok/Geçersiz", shape=box];
+    D4 [label="Kargo Ücreti: Sepet > 200 TL mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    D5 [label="Kargo: 0 TL", shape=box];
+    D6 [label="Kargo: 15 TL", shape=box];
+
+    // Ödeme ve Onay
+    E1 [label="Ödeme Yöntemi Seçimi Geçerli mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    E2 [label="Geçersiz Ödeme", shape=box];
+    E3 [label="Siparişi Onaylıyor musunuz?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    E4 [label="Sipariş Oluşturuldu", shape=box, fillcolor="lightgreen"];
+    E5 [label="Sipariş İptal Edildi", shape=box, fillcolor="salmon"];
+    F1 [label="Bitir", shape=oval, fillcolor="greenyellow"];
+
+
+    // Akış Bağlantıları
+    A0 -> A1;
+    A1 -> A2;
+    A2 -> B1 [label="Evet"];
+    A2 -> A3 [label="Hayır"];
+    A3 -> A1; 
+
+    B1 -> B2;
+    B2 -> B3;
+    B3 -> B4 [label="Evet"];
+    B4 -> B6;
+    B3 -> B5 [label="Hayır"]; 
+    B5 -> B1; // Stok yetersizse ürün seçimine dön
+
+    B6 -> B1 [label="Evet"]; // Alışveriş Döngüsü
+    B6 -> C1 [label="Hayır"];
+
+    C1 -> C2;
+    C2 -> C1 [label="Evet"]; 
+    C2 -> C3 [label="Hayır"];
+
+    // REVİZE EDİLMİŞ BAĞLANTI: Min 50 TL yoksa B1'e dön
+    C3 -> D1 [label="Evet (>= 50 TL)"];
+    C3 -> B1 [label="Hayır (< 50 TL)"]; 
+
+    D1 -> D2 [label="Evet"];
+    D1 -> D3 [label="Hayır"];
+    D2 -> D4;
+    D3 -> D4;
+
+    D4 -> D5 [label="Evet"];
+    D4 -> D6 [label="Hayır"];
+    D5 -> E1;
+    D6 -> E1;
+
+    E1 -> E3 [label="Evet"];
+    E1 -> E2 [label="Hayır"];
+    E2 -> E1; 
+
+    E3 -> E4 [label="Evet"];
+    E3 -> E5 [label="Hayır"];
+
+    C4 -> F1; // C4 artık sadece Sipariş İptali
+    E4 -> F1;
+    E5 -> F1;
+}
+tamamdır bu dot kodu iyi simdi bunun sozde kodunu ve acıklamasını düzenle bu dot koduna göre
+BASLA OnlineAlisverisSistemi
+
+    // A1, A2, A3: Kullanıcı Girişi Kontrolü
+    DOGRULANDI = YANLIS
+    IKEN (DOGRULANDI == YANLIS) DO
+        KULLANICI_GIRISI = KULLANICI_GIRISI_AL()
+        DOGRULANDI = KULLANICI_GIRIS_KONTROLU(KULLANICI_GIRISI)
+        EGER (DOGRULANDI == YANLIS) O ZAMAN
+            EKRANA_YAZ "Hatalı Giriş. Tekrar Deneyin."
+        SON
+    SON
+
+    // B1 - B6: Ürün Gezinme ve Sepete Ekleme Döngüsü
+    TEKRAR_ALISVERIS_ET: // <-- Stok ve Min 50 TL kontrolünden buraya dönülür (B1)
+    DEVAM_ET = DOGRU
+    IKEN (DEVAM_ET == DOGRU) DO
+        EKRANA_YAZ "Ürün Kategorilerini Listele..."
+        ... (Kategori ve Ürün Seçimi) ...
+        MIKTAR = MIKTAR_GIRISI_AL()
+
+        // B3: Stok Kontrolü
+        EGER (STOK_KONTROL(URUN_SECIMI, MIKTAR) == DOGRU) O ZAMAN
+            SEPETE_EKLE(URUN_SECIMI, MIKTAR) // B4
+            EKRANA_YAZ "Ürün sepete eklendi."
+        DIGER DURUMDA
+            EKRANA_YAZ "Yetersiz Stok! Yeni seçim için yönlendiriliyor." // B5
+            GIT TEKRAR_ALISVERIS_ET // B1'e dön
+        SON
+
+        EKRANA_YAZ "Alışverişe Devam Etmek İster Misiniz? (E/H)"
+        EGER (KULLANICI_CEVABI_AL() == 'H') O ZAMAN // B6
+            DEVAM_ET = YANLIS
+        SON
+    SON
+
+    // C1, C2: Sepeti Görüntüleme ve Düzenleme Döngüsü
+    SEPET_DUZENLE = DOGRU
+    IKEN (SEPET_DUZENLE == DOGRU) DO
+        SEPETI_GORUNTULE()
+        ... (Düzenleme işlemleri) ...
+        EGER (Kullanıcı 'Devam Et' dedi) O ZAMAN
+            SEPET_DUZENLE = YANLIS
+        SON
+    SON
+
+    SEPET_TOPLAMI = SEPET_TUTARI_HESAPLA()
+
+    // C3: Minimum Tutar Kontrolü
+    EGER (SEPET_TOPLAMI < 50.00) O ZAMAN // Koşul
+        EKRANA_YAZ "Siparişi tamamlamak için minimum tutar (50 TL) sağlanamadı. Ürün eklemeye yönlendiriliyor."
+        GIT TEKRAR_ALISVERIS_ET // B1'e dön
+    SON
+
+    // D1 - D3: İndirim Kodu Uygulama
+    EGER (INDIM_KODU_GIRILDI == DOGRU) O ZAMAN // D1
+        KOD = KOD_GIRISI_AL()
+        EGER (KOD_GECERLI_MI(KOD) == DOGRU) O ZAMAN
+            SEPET_TOPLAMI = INDIRIMI_UYGULA(SEPET_TOPLAMI, KOD) // D2
+        DIGER DURUMDA
+            EKRANA_YAZ "Geçersiz İndirim Kodu." // D3
+        SON
+    SON
+
+    // D4 - D6: Kargo Ücreti Hesaplama
+    KARGO_UCRETI = 15.00
+    EGER (SEPET_TOPLAMI > 200.00) O ZAMAN // D4
+        KARGO_UCRETI = 0.00 // D5
+    DIGER DURUMDA
+        // D6
+    SON
+    TOPLAM_ODENECEK = SEPET_TOPLAMI + KARGO_UCRETI
+
+    // E1, E2: Ödeme Yöntemi Seçimi
+    ODEME_SECIMI_YAPILDI = YANLIS
+    IKEN (ODEME_SECIMI_YAPILDI == YANLIS) DO
+        ODEME_YONTEMI = KULLANICI_SECIMI_AL()
+        EGER (ODEME_YONTEMI_GECERLI_MI(ODEME_YONTEMI) == DOGRU) O ZAMAN // E1
+            ODEME_SECIMI_YAPILDI = DOGRU
+        DIGER DURUMDA
+            EKRANA_YAZ "Geçersiz ödeme yöntemi." // E2
+        SON
+    SON
+
+    // E3, E4, E5: Sipariş Onayı
+    EKRANA_YAZ "Toplam Ödenecek Tutar: " + TOPLAM_ODENECEK + " TL"
+    EKRANA_YAZ "Siparişi Onaylıyor Musunuz? (E/H)"
+    EGER (KULLANICI_CEVABI_AL() == 'E') O ZAMAN // E3
+        SIPARISI_OLUSTUR(SEPET, TOPLAM_ODENECEK, ODEME_YONTEMI) // E4
+        EKRANA_YAZ "Siparişiniz Başarıyla Oluşturuldu!"
+    DIGER DURUMDA
+        EKRANA_YAZ "Sipariş İptal Edildi." // E5
+    SON
+
+BIT OnlineAlisverisSistemi
 
