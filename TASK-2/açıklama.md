@@ -1,7 +1,7 @@
 İSİM-SOYİSİM : ALİ İSTANBULLU
 OKUL NO:250542019
 
-ONLINE ALIŞVERİŞ SİSTEMİ AKIŞ AÇIKLAMASI (TXT FORMATI)
+ONLINE ALIŞVERİŞ SİSTEMİ AKIŞ AÇIKLAMASI 
 
 A2: Kullanıcı Giriş Kontrolü (Koşul)
 Sisteme erişim için kullanıcının kimlik bilgileri (Kullanıcı Adı/Şifre) kontrol edilir. Başarısız giriş denemelerinde, kullanıcı bir döngü aracılığıyla tekrar giriş yapmaya zorlanır.
