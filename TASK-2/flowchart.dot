@@ -1,1 +1,87 @@
+digraph OnlineAlisveris {
+    rankdir=TB;
+    node [shape=box, style="filled", fillcolor="lightblue"];
 
+    // Başlangıç ve Giriş
+    A0 [label="Başla", shape=oval, fillcolor="greenyellow"];
+    A1 [label="Kullanıcı Girişi", shape=box];
+    A2 [label="Giriş Doğru mu? \n(Koşul)", shape=diamond, fillcolor="yellow"];
+    A3 [label="Hatalı Giriş", shape=box];
+
+    // Alışveriş Döngüsü
+    B1 [label="Ürün Kategorileri Arasında Gezinme\n(Döngü Başı)", shape=box];
+    B2 [label="Ürün Seçimi ve Miktar Girişi", shape=box];
+    B3 [label="Stok Kontrolü Yeterli mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    B4 [label="Sepete Ekle", shape=box];
+    B5 [label="Yetersiz Stok! Yeni Seçim Yap", shape=box, fillcolor="salmon"];
+    B6 [label="Alışverişe Devam Et?", shape=diamond, fillcolor="yellow"];
+
+    // Sepet İşlemleri
+    C1 [label="Sepeti Görüntüle ve Düzenle\n(Döngü Başı)", shape=box];
+    C2 [label="Düzenlemeye Devam Et?", shape=diamond, fillcolor="yellow"];
+    C3 [label="Sepet Tutarı Min 50 TL mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    C4 [label="Sipariş İptal Edildi/Çıkış", shape=box, fillcolor="salmon"]; // Bu düğüm artık sadece sipariş iptalini temsil ediyor.
+
+    // İndirim ve Kargo
+    D1 [label="İndirim Kodu Uygulanacak mı?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    D2 [label="İndirimi Uygula", shape=box];
+    D3 [label="Kod Yok/Geçersiz", shape=box];
+    D4 [label="Kargo Ücreti: Sepet > 200 TL mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    D5 [label="Kargo: 0 TL", shape=box];
+    D6 [label="Kargo: 15 TL", shape=box];
+
+    // Ödeme ve Onay
+    E1 [label="Ödeme Yöntemi Seçimi Geçerli mi?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    E2 [label="Geçersiz Ödeme", shape=box];
+    E3 [label="Siparişi Onaylıyor musunuz?\n(Koşul)", shape=diamond, fillcolor="yellow"];
+    E4 [label="Sipariş Oluşturuldu", shape=box, fillcolor="lightgreen"];
+    E5 [label="Sipariş İptal Edildi", shape=box, fillcolor="salmon"];
+    F1 [label="Bitir", shape=oval, fillcolor="greenyellow"];
+
+
+    // Akış Bağlantıları
+    A0 -> A1;
+    A1 -> A2;
+    A2 -> B1 [label="Evet"];
+    A2 -> A3 [label="Hayır"];
+    A3 -> A1; 
+
+    B1 -> B2;
+    B2 -> B3;
+    B3 -> B4 [label="Evet"];
+    B4 -> B6;
+    B3 -> B5 [label="Hayır"]; 
+    B5 -> B1; // Stok yetersizse ürün seçimine dön
+
+    B6 -> B1 [label="Evet"]; // Alışveriş Döngüsü
+    B6 -> C1 [label="Hayır"];
+
+    C1 -> C2;
+    C2 -> C1 [label="Evet"]; 
+    C2 -> C3 [label="Hayır"];
+
+    // REVİZE EDİLMİŞ BAĞLANTI: Min 50 TL yoksa B1'e dön
+    C3 -> D1 [label="Evet (>= 50 TL)"];
+    C3 -> B1 [label="Hayır (< 50 TL)"]; 
+
+    D1 -> D2 [label="Evet"];
+    D1 -> D3 [label="Hayır"];
+    D2 -> D4;
+    D3 -> D4;
+
+    D4 -> D5 [label="Evet"];
+    D4 -> D6 [label="Hayır"];
+    D5 -> E1;
+    D6 -> E1;
+
+    E1 -> E3 [label="Evet"];
+    E1 -> E2 [label="Hayır"];
+    E2 -> E1; 
+
+    E3 -> E4 [label="Evet"];
+    E3 -> E5 [label="Hayır"];
+
+    C4 -> F1; // C4 artık sadece Sipariş İptali
+    E4 -> F1;
+    E5 -> F1;
+}
