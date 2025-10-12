@@ -1,1 +1,241 @@
+ Hastane Randevu ve Tahlil Sistemi Hasta kimlik do˘grulama (TC No)
+˙
+I¸slem se¸cimi: 1-Randevu Al, 2-Tahlil Sonucu G¨or (ko¸sul)
+Randevu mod¨ul¨u: Poliklinik se¸cimi, doktor listesi, uygun saatler
+(d¨ong¨u)
+Randevu onayı ve SMS g¨onderimi
+Tahlil mod¨ul¨u: Tahlil var mı kontrol¨u (ko¸sul)
+Sonu¸c hazır mı kontrol¨u (ko¸sul)
+Sonu¸c g¨or¨unt¨uleme veya bekleme mesajı
+Sonu¸cları PDF indir se¸cene˘gi
+Ba¸ska i¸slem yapmak ister misiniz? (d¨ong¨u) bana bunun sözde kodunu  dot kodunu yaz
+BAŞLA
+    SÜREKLİ DÖNGÜ:
+        // Hasta Kimlik Doğrulama
+        EKRANA YAZDIR("Hastane Randevu ve Tahlil Sistemi")
+        EKRANA YAZDIR("Lütfen TC Kimlik Numaranızı giriniz:")
+        TC_KIMLIK_NO = KULLANICIDAN AL()
 
+        EĞER (TC_KIMLIK_NO GEÇERLİ İSE)
+            // Ana İşlem Seçimi
+            EKRANA YAZDIR("Yapmak istediğiniz işlemi seçiniz:")
+            EKRANA YAZDIR("1 - Randevu Al")
+            EKRANA YAZDIR("2 - Tahlil Sonucu Görüntüle")
+            ISLEM_SECIMI = KULLANICIDAN AL()
+
+            EĞER (ISLEM_SECIMI EŞİTTİR 1)
+                // Randevu Modülü
+                EKRANA YAZDIR("Randevu Alma Modülü")
+                SÜREKLİ DÖNGÜ (RANDEVU_DONGUSU):
+                    POLIKLINIK = POLIKLINIK_SECIMI_AL()
+                    DOKTOR_LISTESI = POLIKLINIK_DOKTORLARINI_GETIR(POLIKLINIK)
+                    EKRANA YAZDIR("Lütfen bir doktor seçiniz:")
+                    DOKTOR = KULLANICIDAN AL()
+
+                    UYGUN_SAATLER = DOKTOR_UYGUN_SAATLERI_GETIR(DOKTOR)
+                    EĞER (UYGUN_SAATLER BOŞ DEĞİL İSE)
+                        EKRANA YAZDIR("Lütfen uygun bir saat seçiniz:")
+                        SEÇİLEN_SAAT = KULLANICIDAN AL()
+
+                        EKRANA YAZDIR("Randevu Onayı: [POLIKLINIK] - Dr. [DOKTOR] - [SEÇİLEN_SAAT]")
+                        ONAY = KULLANICIDAN_ONAY_AL()
+
+                        EĞER (ONAY EŞİTTİR EVET)
+                            RANDEVU_KAYDET(TC_KIMLIK_NO, DOKTOR, SEÇİLEN_SAAT)
+                            SMS_GONDER(TC_KIMLIK_NO, "Randevunuz başarıyla oluşturulmuştur.")
+                            DÖNGÜDEN ÇIK (RANDEVU_DONGUSU) // Randevu başarılı, döngüden çık
+                        AKSİ HALDE
+                            EKRANA YAZDIR("Randevu onayı iptal edildi. Tekrar denemek ister misiniz?")
+                            // Buraya tekrar deneme sorusu eklenebilir, şimdilik döngü devam etsin.
+                    AKSİ HALDE
+                        EKRANA YAZDIR("Seçilen doktor için uygun saat bulunmamaktadır.")
+                        // Kullanıcıya farklı doktor veya poliklinik seçme imkanı sunulabilir
+            
+            AKSİ HALDE EĞER (ISLEM_SECIMI EŞİTTİR 2)
+                // Tahlil Modülü
+                EKRANA YAZDIR("Tahlil Sonucu Görüntüleme Modülü")
+                
+                TAHLIL_VAR_MI = TAHLIL_KONTROL(TC_KIMLIK_NO)
+                EĞER (TAHLIL_VAR_MI EŞİTTİR EVET)
+                    SONUC_HAZIR_MI = SONUC_HAZIRLIK_KONTROL(TC_KIMLIK_NO)
+                    EĞER (SONUC_HAZIR_MI EŞİTTİR EVET)
+                        TAHLIL_SONUCLARINI_GOSTER(TC_KIMLIK_NO)
+                        EKRANA YAZDIR("1 - Sonuçları PDF İndir")
+                        EKRANA YAZDIR("2 - Ana Menüye Dön")
+                        SECIM_TAHLIL = KULLANICIDAN AL()
+                        EĞER (SECIM_TAHLIL EŞİTTİR 1)
+                            PDF_INDIR(TC_KIMLIK_NO)
+                            EKRANA YAZDIR("PDF başarıyla indirildi.")
+                    AKSİ HALDE
+                        EKRANA YAZDIR("Tahlil sonuçlarınız henüz hazır değildir. Lütfen daha sonra tekrar deneyiniz.")
+                AKSİ HALDE
+                    EKRANA YAZDIR("Sistemde TC Kimlik Numaranıza ait tamamlanmış bir tahlil bulunmamaktadır.")
+
+            AKSİ HALDE
+                EKRANA YAZDIR("Geçersiz işlem seçimi.")
+                
+            // Başka İşlem Sorgusu
+            EKRANA YAZDIR("Başka bir işlem yapmak ister misiniz? (E/H)")
+            DEVAM = KULLANICIDAN AL()
+            EĞER (DEVAM EŞİTTİR H)
+                DÖNGÜDEN ÇIK (SÜREKLİ DÖNGÜ)
+        AKSİ HALDE
+            EKRANA YAZDIR("Geçersiz TC Kimlik Numarası. Lütfen tekrar deneyiniz.")
+            
+SON
+digraph HastaneSistemi {
+    // Düğüm Tanımlamaları
+    node [shape=box, style="filled", fillcolor="#ECEFF1"];
+    
+    start [label="BAŞLA", shape=Mdiamond, fillcolor="#C8E6C9"];
+    tc_dogrulama [label="Hasta Kimlik Doğrulama\n(TC No)", shape=cylinder];
+    tc_gecerli_mi [label="TC Geçerli mi?", shape=diamond, fillcolor="#FFCDD2"];
+    islem_secimi [label="İşlem Seçimi:\n1-Randevu Al\n2-Tahlil Sonucu Gör", shape=box];
+    
+    // Randevu Akışı
+    randevu_al [label="Randevu Modülü", fillcolor="#BBDEFB"];
+    randevu_dongu_start [label="Randevu Döngü Başlangıcı", shape=point];
+    poliklinik_sec [label="Poliklinik Seçimi"];
+    doktor_listesi [label="Doktor Listesi Getir"];
+    saat_uygun_mu [label="Uygun Saatler Var mı?", shape=diamond, fillcolor="#FFCDD2"];
+    randevu_onay [label="Randevu Onayı ve SMS", fillcolor="#A5D6A7"];
+    randevu_son [label="Randevu Akışı Tamamlandı", shape=point];
+
+    // Tahlil Akışı
+    tahlil_gor [label="Tahlil Modülü", fillcolor="#FFF9C4"];
+    tahlil_var_mi [label="Tahlil Var mı?", shape=diamond, fillcolor="#FFCDD2"];
+    sonuc_hazir_mi [label="Sonuç Hazır mı?", shape=diamond, fillcolor="#FFCDD2"];
+    sonuc_goster [label="Sonuç Görüntüleme"];
+    pdf_indir [label="PDF İndir Seçeneği", fillcolor="#FFE0B2"];
+    bekleme_mesaji [label="Bekleme Mesajı\n(Sonuç Hazır Değil)", fillcolor="#EF9A9A"];
+    tahlil_yok_mesaj [label="Tahlil Yok Mesajı", fillcolor="#EF9A9A"];
+
+    // Bitiş Akışı
+    baska_islem [label="Başka İşlem Yapmak İster misiniz?\n(E/H)", shape=diamond, fillcolor="#E1BEE7"];
+    hata_tc [label="Geçersiz TC Uyarısı", fillcolor="#EF9A9A"];
+    end [label="SON", shape=Mdiamond, fillcolor="#C8E6C9"];
+    
+    // Akış Bağlantıları
+    start -> tc_dogrulama;
+    tc_dogrulama -> tc_gecerli_mi;
+    
+    // TC Doğrulama Koşulu
+    tc_gecerli_mi -> islem_secimi [label="Evet"];
+    tc_gecerli_mi -> hata_tc [label="Hayır"];
+    hata_tc -> tc_dogrulama [label="Tekrar Dene"];
+    
+    // İşlem Seçimi Koşulu
+    islem_secimi -> randevu_al [label="1"];
+    islem_secimi -> tahlil_gor [label="2"];
+    
+    // Randevu Akışı Detayları
+    randevu_al -> randevu_dongu_start;
+    randevu_dongu_start -> poliklinik_sec;
+    poliklinik_sec -> doktor_listesi;
+    doktor_listesi -> saat_uygun_mu;
+    saat_uygun_mu -> randevu_onay [label="Evet\n(Saat Seçimi)"];
+    saat_uygun_mu -> randevu_dongu_start [label="Hayır\n(Tekrar Seçim)"]; // Uygun saat yoksa döngüye dön
+    randevu_onay -> randevu_son;
+    randevu_son -> baska_islem;
+    
+    // Tahlil Akışı Detayları
+    tahlil_gor -> tahlil_var_mi;
+    tahlil_var_mi -> sonuc_hazir_mi [label="Evet"];
+    tahlil_var_mi -> tahlil_yok_mesaj [label="Hayır"];
+    
+    sonuc_hazir_mi -> sonuc_goster [label="Evet"];
+    sonuc_hazir_mi -> bekleme_mesaji [label="Hayır"];
+    
+    sonuc_goster -> pdf_indir;
+    
+    pdf_indir -> baska_islem;
+    bekleme_mesaji -> baska_islem;
+    tahlil_yok_mesaj -> baska_islem;
+
+    // Bitiş Akışı
+    baska_islem -> tc_dogrulama [label="E"]; // Döngü
+    baska_islem -> end [label="H"];
+}
+neden silindir kullandın veri girişi degil mi paralel dikdörtgen daha uygun degıl mı
+Haklısınız, akış şeması standartlarında  paralelkenar şekli  veri girişi/çıkışı (input/output) için kullanılır.
+
+DOT kodunda kimlik doğrulama adımında silindir (cylinder) kullanmamın nedeni, bu adımın sadece bir veri girişi (TC No alınması) olmasının ötesinde, bu verinin bir veri tabanından kontrol edilmesi/doğrulanması gibi bir sistem operasyonunu temsil etme isteğidir. Silindir şekli bazen akış şemalarında veri depolama/saklama veya harici veri/veri tabanı işlemleri için de kullanılır.
+
+Ancak, akışın sadece kullanıcıdan veri alma kısmı vurgulanmak isteniyorsa, sizin belirttiğiniz gibi:
+
+Paralelkenar (Input/Output) en uygunudur:
+tamadır senin dediğin olsun bunun sözde kodunu çıkar
+BAŞLA
+    SÜREKLİ DÖNGÜ:
+        // Hasta Kimlik Doğrulama
+        EKRANA YAZDIR("Hastane Randevu ve Tahlil Sistemi")
+        EKRANA YAZDIR("Lütfen TC Kimlik Numaranızı giriniz:")
+        TC_KIMLIK_NO = KULLANICIDAN AL()
+
+        EĞER (TC_KIMLIK_NO GEÇERLİ İSE)
+            // Ana İşlem Seçimi
+            EKRANA YAZDIR("Yapmak istediğiniz işlemi seçiniz:")
+            EKRANA YAZDIR("1 - Randevu Al")
+            EKRANA YAZDIR("2 - Tahlil Sonucu Görüntüle")
+            ISLEM_SECIMI = KULLANICIDAN AL()
+
+            EĞER (ISLEM_SECIMI EŞİTTİR 1)
+                // Randevu Modülü
+                EKRANA YAZDIR("Randevu Alma Modülü")
+                SÜREKLİ DÖNGÜ (RANDEVU_DONGUSU):
+                    POLIKLINIK = POLIKLINIK_SECIMI_AL()
+                    DOKTOR_LISTESI = POLIKLINIK_DOKTORLARINI_GETIR(POLIKLINIK)
+                    EKRANA YAZDIR("Lütfen bir doktor seçiniz:")
+                    DOKTOR = KULLANICIDAN AL()
+
+                    UYGUN_SAATLER = DOKTOR_UYGUN_SAATLERI_GETIR(DOKTOR)
+                    EĞER (UYGUN_SAATLER BOŞ DEĞİL İSE)
+                        EKRANA YAZDIR("Lütfen uygun bir saat seçiniz:")
+                        SEÇİLEN_SAAT = KULLANICIDAN AL()
+
+                        EKRANA YAZDIR("Randevu Onayı: [POLIKLINIK] - Dr. [DOKTOR] - [SEÇİLEN_SAAT]")
+                        ONAY = KULLANICIDAN_ONAY_AL()
+
+                        EĞER (ONAY EŞİTTİR EVET)
+                            RANDEVU_KAYDET(TC_KIMLIK_NO, DOKTOR, SEÇİLEN_SAAT)
+                            SMS_GONDER(TC_KIMLIK_NO, "Randevunuz başarıyla oluşturulmuştur.")
+                            DÖNGÜDEN ÇIK (RANDEVU_DONGUSU) // Randevu başarılı, döngüden çık
+                        AKSİ HALDE
+                            EKRANA YAZDIR("Randevu onayı iptal edildi. Tekrar denemek ister misiniz?")
+                            // Buraya tekrar deneme sorusu eklenebilir, şimdilik döngü devam etsin.
+                    AKSİ HALDE
+                        EKRANA YAZDIR("Seçilen doktor için uygun saat bulunmamaktadır.")
+                        // Kullanıcıya farklı doktor veya poliklinik seçme imkanı sunulabilir
+            
+            AKSİ HALDE EĞER (ISLEM_SECIMI EŞİTTİR 2)
+                // Tahlil Modülü
+                EKRANA YAZDIR("Tahlil Sonucu Görüntüleme Modülü")
+                
+                TAHLIL_VAR_MI = TAHLIL_KONTROL(TC_KIMLIK_NO)
+                EĞER (TAHLIL_VAR_MI EŞİTTİR EVET)
+                    SONUC_HAZIR_MI = SONUC_HAZIRLIK_KONTROL(TC_KIMLIK_NO)
+                    EĞER (SONUC_HAZIR_MI EŞİTTİR EVET)
+                        TAHLIL_SONUCLARINI_GOSTER(TC_KIMLIK_NO)
+                        EKRANA YAZDIR("1 - Sonuçları PDF İndir")
+                        EKRANA YAZDIR("2 - Ana Menüye Dön")
+                        SECIM_TAHLIL = KULLANICIDAN AL()
+                        EĞER (SECIM_TAHLIL EŞİTTİR 1)
+                            PDF_INDIR(TC_KIMLIK_NO)
+                            EKRANA YAZDIR("PDF başarıyla indirildi.")
+                    AKSİ HALDE
+                        EKRANA YAZDIR("Tahlil sonuçlarınız henüz hazır değildir. Lütfen daha sonra tekrar deneyiniz.")
+                AKSİ HALDE
+                    EKRANA YAZDIR("Sistemde TC Kimlik Numaranıza ait tamamlanmış bir tahlil bulunmamaktadır.")
+
+            AKSİ HALDE
+                EKRANA YAZDIR("Geçersiz işlem seçimi.")
+                
+            // Başka İşlem Sorgusu
+            EKRANA YAZDIR("Başka bir işlem yapmak ister misiniz? (E/H)")
+            DEVAM = KULLANICIDAN AL()
+            EĞER (DEVAM EŞİTTİR H)
+                DÖNGÜDEN ÇIK (SÜREKLİ DÖNGÜ)
+        AKSİ HALDE
+            EKRANA YAZDIR("Geçersiz TC Kimlik Numarası. Lütfen tekrar deneyiniz.")
+            
+SON
