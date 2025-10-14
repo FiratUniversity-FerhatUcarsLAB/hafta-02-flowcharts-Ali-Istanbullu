@@ -1,1 +1,647 @@
+Üniversite Ders Kayıt  O˘grenci giri¸si (¨o˘grenci no + ¸sifre) ¨
+Ders listesini g¨or¨unt¨uleme (d¨ong¨u)
+Her ders i¸cin:
+Kontenjan kontrol¨u (ko¸sul)
+On ko¸sul dersi kontrol¨u (ko¸sul) ¨
+Zaman ¸cakı¸sması kontrol¨u (ko¸sul)
+Kredi limiti kontrol¨u (toplam ≤ 35) (ko¸sul)
+Ders ekleme/¸cıkarma (d¨ong¨u)
+Danı¸sman onayı gerekli mi? (GPA ¡ 2.5 ise) (ko¸sul)
+Kayıt ¨ozeti g¨osterme ve kayıt onaylama dot dili ve sözde kodunu çıkar
+BAŞLA
+
+  // --- Değişken Tanımlamaları ---
+  sistemdeki_dersler = [Ders1, Ders2, ..., DersN] // Tüm derslerin listesi
+  secilen_dersler = [] // Öğrencinin seçtiği derslerin listesi
+  toplam_kredi = 0
+  KREDI_LIMITI = 35
+  danisman_onayi_gerekli = FALSE
+
+  // --- 1. Öğrenci Girişi ---
+  İŞLEM ogrenci_girisi():
+    YAZ "Öğrenci numaranızı giriniz:"
+    OKU ogrenci_no
+    YAZ "Şifrenizi giriniz:"
+    OKU sifre
+    EĞER (ogrenci_no + sifre) veritabanında DOĞRU DEĞİLSE
+      YAZ "Hatalı giriş."
+      döngüye dön VEYA programı sonlandır
+    BİTTİ
+    ogrenci_bilgileri = veritabanından_ogrenci_bilgilerini_al(ogrenci_no)
+  SON İŞLEM
+
+  // --- 2. Ana Kayıt Döngüsü ---
+  DÖNGÜ (kullanıcı kaydı bitirene kadar):
+    YAZ "--- Ders Kayıt Ekranı ---"
+    YAZ "1. Ders Ekle"
+    YAZ "2. Ders Çıkar"
+    YAZ "3. Seçilen Dersleri Görüntüle"
+    YAZ "4. Kaydı Tamamla"
+    OKU secim
+
+    SEÇİME GÖRE:
+      DURUM 1: // Ders Ekle
+        // Ders Listesini Görüntüleme
+        YAZ "--- Tüm Dersler ---"
+        HER ders İÇİN sistemdeki_dersler:
+          YAZ ders.kodu, ders.adi, ders.kredisi, "Kontenjan:", ders.kayitli_ogrenci_sayisi, "/", ders.kontenjan
+        SON HER
+
+        YAZ "Eklemek istediğiniz dersin kodunu girin:"
+        OKU eklenecek_ders_kodu
+        eklenecek_ders = sistemdeki_dersler arasından bul(eklenecek_ders_kodu)
+
+        // Kontroller
+        EĞER eklenecek_ders.kayitli_ogrenci_sayisi >= eklenecek_ders.kontenjan İSE
+          YAZ "HATA: Dersin kontenjanı dolu."
+        DEĞİLSE EĞER ogrenci_bilgileri.aldigi_dersler arasında eklenecek_ders.on_kosul YOK İSE
+          YAZ "HATA: Bu dersin ön koşulunu sağlamıyorsunuz."
+        DEĞİLSE EĞER secilen_dersler arasında eklenecek_ders ile zaman çakışması VAR İSE
+          YAZ "HATA: Seçtiğiniz başka bir ders ile zaman çakışması var."
+        DEĞİLSE EĞER (toplam_kredi + eklenecek_ders.kredisi) > KREDI_LIMITI İSE
+          YAZ "HATA: Kredi limitini (35) aşıyorsunuz."
+        DEĞİLSE
+          secilen_dersler listesine eklenecek_ders'i ekle
+          toplam_kredi = toplam_kredi + eklenecek_ders.kredisi
+          YAZ eklenecek_ders.adi, " dersi başarıyla eklendi."
+        SON EĞER
+
+      DURUM 2: // Ders Çıkar
+        YAZ "--- Seçilen Dersler ---"
+        HER ders İÇİN secilen_dersler:
+          YAZ ders.kodu, ders.adi
+        SON HER
+        YAZ "Çıkarmak istediğiniz dersin kodunu girin:"
+        OKU cikarilacak_ders_kodu
+        cikarilacak_ders = secilen_dersler arasından bul(cikarilacak_ders_kodu)
+
+        EĞER cikarilacak_ders BULUNDUYSA
+          secilen_dersler listesinden cikarilacak_ders'i çıkar
+          toplam_kredi = toplam_kredi - cikarilacak_ders.kredisi
+          YAZ cikarilacak_ders.adi, " dersi başarıyla çıkarıldı."
+        DEĞİLSE
+          YAZ "HATA: Bu ders seçilenler arasında bulunamadı."
+        SON EĞER
+
+      DURUM 3: // Seçilen Dersleri Görüntüle
+        YAZ "--- Seçilen Dersler ---"
+        HER ders İÇİN secilen_dersler:
+          YAZ ders.kodu, ders.adi, ders.kredisi
+        SON HER
+        YAZ "Toplam Kredi:", toplam_kredi
+
+      DURUM 4: // Kaydı Tamamla
+        DÖNGÜDEN ÇIK
+    SON SEÇİM
+  SON DÖNGÜ
+
+  // --- 3. Kayıt Özeti ve Onaylama ---
+  YAZ "--- Kayıt Özeti ---"
+  HER ders İÇİN secilen_dersler:
+    YAZ ders.kodu, ders.adi, ders.kredisi
+  SON HER
+  YAZ "Toplam Kredi:", toplam_kredi
+
+  // Danışman Onayı Kontrolü
+  EĞER ogrenci_bilgileri.GPA < 2.5 İSE
+    danisman_onayi_gerekli = TRUE
+    YAZ "UYARI: Not ortalamanız 2.5'in altında olduğu için kaydınızın danışman tarafından onaylanması gerekmektedir."
+  DEĞİLSE
+    YAZ "Kaydınız başarıyla tamamlanmıştır."
+  SON EĞER
+
+  YAZ "Kaydı onaylıyor musunuz? (E/H)"
+  OKU onay
+  EĞER onay == 'E'
+    kayit_bilgilerini_veritabanına_gonder(secilen_dersler, danisman_onayi_gerekli)
+    YAZ "Kayıt işlemi sonlandırıldı."
+  DEĞİLSE
+    YAZ "Kayıt işlemi iptal edildi."
+  SON EĞER
+
+BİTİR
+digraph DersKayitSistemi {
+    // Grafik ayarları
+    rankdir=TB;
+    node [shape = box, style = rounded, fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // Düğümler (Adımlar)
+    start [label="Başla", shape=ellipse];
+    login [label="Öğrenci Girişi\n(öğrenci no + şifre)"];
+    login_check [label="Giriş Başarılı?", shape=diamond];
+    display_list [label="Ders Listesini Görüntüle"];
+    main_loop [label="Ders Ekleme / Çıkarma Döngüsü", shape=cds, style=filled, fillcolor=lightgrey];
+    
+    // Ders Ekleme Kontrolleri
+    quota_check [label="Kontenjan Uygun mu?", shape=diamond];
+    prereq_check [label="Ön Koşul Sağlandı mı?", shape=diamond];
+    conflict_check [label="Zaman Çakışması Var mı?", shape=diamond];
+    credit_check [label="Kredi Limiti (≤ 35)\nAşılıyor mu?", shape=diamond];
+    
+    add_course [label="Dersi Ekle ve\nKrediyi Güncelle"];
+    show_error [label="Hata Mesajı Göster", shape=note];
+    
+    // Kayıt Sonlandırma
+    summary [label="Kayıt Özeti Göster"];
+    gpa_check [label="GPA < 2.5?", shape=diamond];
+    advisor_approval [label="Danışman Onayı Gerekli", style=filled, fillcolor=orange];
+    confirm_registration [label="Kayıt Onaylandı", style=filled, fillcolor=lightgreen];
+    end [label="Bitir", shape=ellipse];
+
+    // Kenarlar (Akış)
+    start -> login;
+    login -> login_check;
+    login_check -> display_list [label="Evet"];
+    login_check -> login [label="Hayır"];
+    
+    display_list -> main_loop;
+    main_loop -> quota_check [label="Ders Ekleme Seçildi"];
+    
+    // Kontrol Akışları
+    quota_check -> prereq_check [label="Evet"];
+    quota_check -> show_error [label="Hayır"];
+    
+    prereq_check -> conflict_check [label="Evet"];
+    prereq_check -> show_error [label="Hayır"];
+    
+    conflict_check -> credit_check [label="Hayır (Çakışma Yok)"];
+    conflict_check -> show_error [label="Evet (Çakışma Var)"];
+    
+    credit_check -> add_course [label="Hayır (Aşılmıyor)"];
+    credit_check -> show_error [label="Evet (Aşılıyor)"];
+    
+    add_course -> main_loop;
+    show_error -> main_loop;
+
+    main_loop -> main_loop [label="Ders Çıkarma\n(Benzer Akış)"];
+    
+    // Sonlandırma Akışı
+    main_loop -> summary [label="Kaydı Tamamla Seçildi"];
+    summary -> gpa_check;
+    gpa_check -> advisor_approval [label="Evet"];
+    gpa_check -> confirm_registration [label="Hayır"];
+    
+    advisor_approval -> end;
+    confirm_registration -> end;
+}
+ögrenci grişindeki hayırı dısardan al 
+hayır bunu kastetmedim tekrar döngüye soksun yine ögrenci grişi bolumune atsın ama cıkardıgın oku dıs taraftan getir
+digraph DersKayitSistemi {
+    // Grafik ayarları
+    rankdir=TB;
+    node [shape = box, style = rounded, fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // Düğümler (Adımlar)
+    start [label="Başla", shape=ellipse];
+    login [label="Öğrenci Girişi\n(öğrenci no + şifre)"];
+    login_check [label="Giriş Başarılı?", shape=diamond];
+    display_list [label="Ders Listesini Görüntüle"];
+    main_loop [label="Ders Ekleme / Çıkarma Döngüsü", shape=cds, style=filled, fillcolor=lightgrey];
+    
+    // Ders Ekleme Kontrolleri
+    quota_check [label="Kontenjan Uygun mu?", shape=diamond];
+    prereq_check [label="Ön Koşul Sağlandı mı?", shape=diamond];
+    conflict_check [label="Zaman Çakışması Var mı?", shape=diamond];
+    credit_check [label="Kredi Limiti (≤ 35)\nAşılıyor mu?", shape=diamond];
+    
+    add_course [label="Dersi Ekle ve\nKrediyi Güncelle"];
+    show_error [label="Hata Mesajı Göster", shape=note];
+    
+    // Kayıt Sonlandırma
+    summary [label="Kayıt Özeti Göster"];
+    gpa_check [label="GPA < 2.5?", shape=diamond];
+    advisor_approval [label="Danışman Onayı Gerekli", style=filled, fillcolor=orange];
+    confirm_registration [label="Kayıt Onaylandı", style=filled, fillcolor=lightgreen];
+    end [label="Bitir", shape=ellipse];
+
+    // Kenarlar (Akış)
+    start -> login;
+    login -> login_check;
+    login_check -> display_list [label="Evet"];
+    
+    // DEĞİŞEN KISIM: 'Hayır' oku, portlar kullanılarak dışarıdan dolaşacak şekilde ayarlandı.
+    login_check:w -> login:w [label="  Hayır", headlabel=""];
+
+    display_list -> main_loop;
+    main_loop -> quota_check [label="Ders Ekleme Seçildi"];
+    
+    // Kontrol Akışları
+    quota_check -> prereq_check [label="Evet"];
+    quota_check -> show_error [label="Hayır"];
+    
+    prereq_check -> conflict_check [label="Evet"];
+    prereq_check -> show_error [label="Hayır"];
+    
+    conflict_check -> credit_check [label="Hayır (Çakışma Yok)"];
+    conflict_check -> show_error [label="Evet (Çakışma Var)"];
+    
+    credit_check -> add_course [label="Hayır (Aşılmıyor)"];
+    credit_check -> show_error [label="Evet (Aşılıyor)"];
+    
+    add_course -> main_loop;
+    show_error -> main_loop;
+
+    main_loop -> main_loop [label="Ders Çıkarma\n(Benzer Akış)"];
+    
+    // Sonlandırma Akışı
+    main_loop -> summary [label="Kaydı Tamamla Seçildi"];
+    summary -> gpa_check;
+    gpa_check -> advisor_approval [label="Evet"];
+    gpa_check -> confirm_registration [label="Hayır"];
+    
+    advisor_approval -> end;
+    confirm_registration -> end;
+}
+ders ekleme cıkarmaya dongu ekleme onun yerine paralel kenar kullanaarak veri girişi olarak göster kullanıcı girişi
+digraph DersKayitSistemi {
+    // Grafik ayarları
+    rankdir=TB;
+    node [shape = box, style = rounded, fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // Düğümler (Adımlar)
+    start [label="Başla", shape=ellipse];
+    login [label="Öğrenci Girişi\n(öğrenci no + şifre)"];
+    login_check [label="Giriş Başarılı?", shape=diamond];
+    display_list [label="Ders Listesini Görüntüle"];
+    
+    // YENİ DÜĞÜM: Döngü yerine paralelkenar veri girişi
+    user_input [label="Kullanıcı Girişi\n(Ders Ekle / Çıkar / Kaydı Bitir)", shape=parallelogram, style=filled, fillcolor=lightblue];
+    
+    // Ders Ekleme Kontrolleri
+    quota_check [label="Kontenjan Uygun mu?", shape=diamond];
+    prereq_check [label="Ön Koşul Sağlandı mı?", shape=diamond];
+    conflict_check [label="Zaman Çakışması Var mı?", shape=diamond];
+    credit_check [label="Kredi Limiti (≤ 35)\nAşılıyor mu?", shape=diamond];
+    
+    add_course [label="Dersi Ekle ve\nKrediyi Güncelle"];
+    show_error [label="Hata Mesajı Göster", shape=note];
+    
+    // Kayıt Sonlandırma
+    summary [label="Kayıt Özeti Göster"];
+    gpa_check [label="GPA < 2.5?", shape=diamond];
+    advisor_approval [label="Danışman Onayı Gerekli", style=filled, fillcolor=orange];
+    confirm_registration [label="Kayıt Onaylandı", style=filled, fillcolor=lightgreen];
+    end [label="Bitir", shape=ellipse];
+
+    // Kenarlar (Akış)
+    start -> login;
+    login -> login_check;
+    login_check:w -> login:w [label="  Hayır", headlabel=""];
+    login_check -> display_list [label="Evet"];
+    
+    // DEĞİŞEN AKIŞ: Artık paralelkenar adımına yönleniyor
+    display_list -> user_input;
+    
+    // Kullanıcı girişine göre yollar ayrılıyor
+    user_input -> quota_check [label="Ders Ekle Seçildi"];
+    user_input -> summary [label="Kaydı Bitir Seçildi"];
+    // "Ders Çıkar" seçeneği de benzer bir kontrol akışından sonra user_input'a döner.
+    // Şemayı sade tutmak için bu ok, basit bir döngü olarak gösterilebilir.
+    user_input -> user_input [label="Ders Çıkar Seçildi\n(İşlem sonrası)"];
+
+    // Kontrol Akışları
+    quota_check -> prereq_check [label="Evet"];
+    quota_check -> show_error [label="Hayır"];
+    
+    prereq_check -> conflict_check [label="Evet"];
+    prereq_check -> show_error [label="Hayır"];
+    
+    conflict_check -> credit_check [label="Hayır (Çakışma Yok)"];
+    conflict_check -> show_error [label="Evet (Çakışma Var)"];
+    
+    credit_check -> add_course [label="Hayır (Aşılmıyor)"];
+    credit_check -> show_error [label="Evet (Aşılıyor)"];
+    
+    // DEĞİŞEN AKIŞ: İşlem veya hata sonrası döngü için tekrar veri girişi adımına dönülüyor
+    add_course -> user_input;
+    show_error -> user_input;
+    
+    // Sonlandırma Akışı (Aynı kaldı)
+    summary -> gpa_check;
+    gpa_check -> advisor_approval [label="Evet"];
+    gpa_check -> confirm_registration [label="Hayır"];
+    
+    advisor_approval -> end;
+    confirm_registration -> end;
+}
+hata mesajı göndermek yerine hatayı soyle teker teker sonra dongu basına at 
+digraph DersKayitSistemi {
+    // Grafik ayarları
+    rankdir=TB;
+    node [shape = box, style = rounded, fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // Düğümler (Adımlar)
+    start [label="Başla", shape=ellipse];
+    login [label="Öğrenci Girişi\n(öğrenci no + şifre)"];
+    login_check [label="Giriş Başarılı?", shape=diamond];
+    display_list [label="Ders Listesini Görüntüle"];
+    user_input [label="Kullanıcı Girişi\n(Ders Ekle / Çıkar / Kaydı Bitir)", shape=parallelogram, style=filled, fillcolor=lightblue];
+    
+    // Ders Ekleme Kontrolleri
+    quota_check [label="Kontenjan Uygun mu?", shape=diamond];
+    prereq_check [label="Ön Koşul Sağlandı mı?", shape=diamond];
+    conflict_check [label="Zaman Çakışması Var mı?", shape=diamond];
+    credit_check [label="Kredi Limiti (≤ 35)\nAşılıyor mu?", shape=diamond];
+    
+    // YENİ DÜĞÜMLER: Spesifik Hata Mesajları
+    error_quota [label="HATA:\nKontenjan Dolu", shape=note, style=filled, fillcolor=lightcoral];
+    error_prereq [label="HATA:\nÖn Koşul Sağlanmadı", shape=note, style=filled, fillcolor=lightcoral];
+    error_conflict [label="HATA:\nZaman Çakışması Var", shape=note, style=filled, fillcolor=lightcoral];
+    error_credit [label="HATA:\nKredi Limiti Aşıldı", shape=note, style=filled, fillcolor=lightcoral];
+    
+    add_course [label="Dersi Ekle ve\nKrediyi Güncelle"];
+    
+    // Kayıt Sonlandırma
+    summary [label="Kayıt Özeti Göster"];
+    gpa_check [label="GPA < 2.5?", shape=diamond];
+    advisor_approval [label="Danışman Onayı Gerekli", style=filled, fillcolor=orange];
+    confirm_registration [label="Kayıt Onaylandı", style=filled, fillcolor=lightgreen];
+    end [label="Bitir", shape=ellipse];
+
+    // Kenarlar (Akış)
+    start -> login;
+    login -> login_check;
+    login_check:w -> login:w [label="  Hayır", headlabel=""];
+    login_check -> display_list [label="Evet"];
+    display_list -> user_input;
+    
+    // Kullanıcı girişine göre yollar
+    user_input -> quota_check [label="Ders Ekle Seçildi"];
+    user_input -> summary [label="Kaydı Bitir Seçildi"];
+    user_input -> user_input [label="Ders Çıkar Seçildi\n(İşlem sonrası)"];
+
+    // DEĞİŞEN AKIŞ: Kontroller artık spesifik hata kutularına yönleniyor
+    quota_check -> prereq_check [label="Evet"];
+    quota_check -> error_quota [label="Hayır"];
+    
+    prereq_check -> conflict_check [label="Evet"];
+    prereq_check -> error_prereq [label="Hayır"];
+    
+    conflict_check -> credit_check [label="Hayır (Çakışma Yok)"];
+    conflict_check -> error_conflict [label="Evet (Çakışma Var)"];
+    
+    credit_check -> add_course [label="Hayır (Aşılmıyor)"];
+    credit_check -> error_credit [label="Evet (Aşılıyor)"];
+    
+    // Başarılı ekleme veya hata sonrası döngü başına dönüş
+    add_course -> user_input;
+    error_quota -> user_input;
+    error_prereq -> user_input;
+    error_conflict -> user_input;
+    error_credit -> user_input;
+    
+    // Sonlandırma Akışı
+    summary -> gpa_check;
+    gpa_check -> advisor_approval [label="Evet"];
+    gpa_check -> confirm_registration [label="Hayır"];
+    
+    advisor_approval -> end;
+    confirm_registration -> end;
+}
+ders ekle ile kaydı bitir ayrı olsa daha mantıklı
+digraph DersKayitSistemi {
+    // Grafik ayarları
+    rankdir=TB;
+    node [shape = box, style = rounded, fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // Düğümler (Adımlar)
+    start [label="Başla", shape=ellipse];
+    login [label="Öğrenci Girişi\n(öğrenci no + şifre)"];
+    login_check [label="Giriş Başarılı?", shape=diamond];
+    display_list [label="Ders Listesini Görüntüle"];
+    
+    // YENİ DÜĞÜMLER: Akışı ayırmak için karar ve veri girişi düğümleri
+    action_select [label="İşlem Seçin", shape=diamond, style=filled, fillcolor=lightyellow];
+    input_course [label="Eklenecek Ders Bilgisini Gir", shape=parallelogram, style=filled, fillcolor=lightblue];
+    
+    // Ders Ekleme Kontrolleri
+    quota_check [label="Kontenjan Uygun mu?", shape=diamond];
+    prereq_check [label="Ön Koşul Sağlandı mı?", shape=diamond];
+    conflict_check [label="Zaman Çakışması Var mı?", shape=diamond];
+    credit_check [label="Kredi Limiti (≤ 35)\nAşılıyor mu?", shape=diamond];
+    
+    // Spesifik Hata Mesajları
+    error_quota [label="HATA:\nKontenjan Dolu", shape=note, style=filled, fillcolor=lightcoral];
+    error_prereq [label="HATA:\nÖn Koşul Sağlanmadı", shape=note, style=filled, fillcolor=lightcoral];
+    error_conflict [label="HATA:\nZaman Çakışması Var", shape=note, style=filled, fillcolor=lightcoral];
+    error_credit [label="HATA:\nKredi Limiti Aşıldı", shape=note, style=filled, fillcolor=lightcoral];
+    
+    add_course [label="Dersi Ekle ve\nKrediyi Güncelle"];
+    
+    // Kayıt Sonlandırma
+    summary [label="Kayıt Özeti Göster"];
+    gpa_check [label="GPA < 2.5?", shape=diamond];
+    advisor_approval [label="Danışman Onayı Gerekli", style=filled, fillcolor=orange];
+    confirm_registration [label="Kayıt Onaylandı", style=filled, fillcolor=lightgreen];
+    end [label="Bitir", shape=ellipse];
+
+    // Kenarlar (Akış)
+    start -> login;
+    login -> login_check;
+    login_check:w -> login:w [label="  Hayır", headlabel=""];
+    login_check -> display_list [label="Evet"];
+    
+    // DEĞİŞEN AKIŞ: Artık önce bir karar noktasına geliniyor
+    display_list -> action_select;
+    
+    // Karar noktasına göre yollar ayrılıyor
+    action_select -> input_course [label="Ders Ekle"];
+    action_select -> summary [label="Kaydı Bitir"];
+    
+    // Ders ekleme akışı
+    input_course -> quota_check;
+    
+    quota_check -> prereq_check [label="Evet"];
+    quota_check -> error_quota [label="Hayır"];
+    
+    prereq_check -> conflict_check [label="Evet"];
+    prereq_check -> error_prereq [label="Hayır"];
+    
+    conflict_check -> credit_check [label="Hayır (Çakışma Yok)"];
+    conflict_check -> error_conflict [label="Evet (Çakışma Var)"];
+    
+    credit_check -> add_course [label="Hayır (Aşılmıyor)"];
+    credit_check -> error_credit [label="Evet (Aşılıyor)"];
+    
+    // Başarılı ekleme veya hata sonrası tekrar karar noktasına dönüş (Döngü)
+    add_course -> action_select;
+    error_quota -> action_select;
+    error_prereq -> action_select;
+    error_conflict -> action_select;
+    error_credit -> action_select;
+    
+    // Sonlandırma Akışı
+    summary -> gpa_check;
+    gpa_check -> advisor_approval [label="Evet"];
+    gpa_check -> confirm_registration [label="Hayır"];
+    
+    advisor_approval -> end;
+    confirm_registration -> end;
+}
+hata mesajlarını  ders ekleye yonlendir daha mantıklı
+digraph DersKayitSistemi {
+    // Grafik ayarları
+    rankdir=TB;
+    node [shape = box, style = rounded, fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // Düğümler (Adımlar)
+    start [label="Başla", shape=ellipse];
+    login [label="Öğrenci Girişi\n(öğrenci no + şifre)"];
+    login_check [label="Giriş Başarılı?", shape=diamond];
+    display_list [label="Ders Listesini Görüntüle"];
+    
+    action_select [label="İşlem Seçin", shape=diamond, style=filled, fillcolor=lightyellow];
+    input_course [label="Eklenecek Ders Bilgisini Gir", shape=parallelogram, style=filled, fillcolor=lightblue];
+    
+    // Ders Ekleme Kontrolleri
+    quota_check [label="Kontenjan Uygun mu?", shape=diamond];
+    prereq_check [label="Ön Koşul Sağlandı mı?", shape=diamond];
+    conflict_check [label="Zaman Çakışması Var mı?", shape=diamond];
+    credit_check [label="Kredi Limiti (≤ 35)\nAşılıyor mu?", shape=diamond];
+    
+    // Spesifik Hata Mesajları
+    error_quota [label="HATA:\nKontenjan Dolu", shape=note, style=filled, fillcolor=lightcoral];
+    error_prereq [label="HATA:\nÖn Koşul Sağlanmadı", shape=note, style=filled, fillcolor=lightcoral];
+    error_conflict [label="HATA:\nZaman Çakışması Var", shape=note, style=filled, fillcolor=lightcoral];
+    error_credit [label="HATA:\nKredi Limiti Aşıldı", shape=note, style=filled, fillcolor=lightcoral];
+    
+    add_course [label="Dersi Ekle ve\nKrediyi Güncelle"];
+    
+    // Kayıt Sonlandırma
+    summary [label="Kayıt Özeti Göster"];
+    gpa_check [label="GPA < 2.5?", shape=diamond];
+    advisor_approval [label="Danışman Onayı Gerekli", style=filled, fillcolor=orange];
+    confirm_registration [label="Kayıt Onaylandı", style=filled, fillcolor=lightgreen];
+    end [label="Bitir", shape=ellipse];
+
+    // Kenarlar (Akış)
+    start -> login;
+    login -> login_check;
+    login_check:w -> login:w [label="  Hayır", headlabel=""];
+    login_check -> display_list [label="Evet"];
+    display_list -> action_select;
+    
+    // Karar noktasına göre yollar ayrılıyor
+    action_select -> input_course [label="Ders Ekle"];
+    action_select -> summary [label="Kaydı Bitir"];
+    
+    // Ders ekleme akışı
+    input_course -> quota_check;
+    
+    quota_check -> prereq_check [label="Evet"];
+    quota_check -> error_quota [label="Hayır"];
+    
+    prereq_check -> conflict_check [label="Evet"];
+    prereq_check -> error_prereq [label="Hayır"];
+    
+    conflict_check -> credit_check [label="Hayır (Çakışma Yok)"];
+    conflict_check -> error_conflict [label="Evet (Çakışma Var)"];
+    
+    credit_check -> add_course [label="Hayır (Aşılmıyor)"];
+    credit_check -> error_credit [label="Evet (Aşılıyor)"];
+    
+    // --- DEĞİŞEN KISIM ---
+    // Başarılı ekleme sonrası ana seçime dönülür.
+    add_course -> action_select;
+    // Hata sonrası ise doğrudan giriş ekranına dönülerek düzeltme imkanı tanınır.
+    error_quota -> input_course;
+    error_prereq -> input_course;
+    error_conflict -> input_course;
+    error_credit -> input_course;
+    
+    // Sonlandırma Akışı
+    summary -> gpa_check;
+    gpa_check -> advisor_approval [label="Evet"];
+    gpa_check -> confirm_registration [label="Hayır"];
+    
+    advisor_approval -> end;
+    confirm_registration -> end;
+}
+aslına bakarsan dersi ekledikten sonra kaydı bitirsin niye basta secenek olarak sunuyorsunki
+digraph DersKayitSistemi {
+    // Grafik ayarları
+    rankdir=TB;
+    node [shape = box, style = rounded, fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // Düğümler (Adımlar)
+    start [label="Başla", shape=ellipse];
+    login [label="Öğrenci Girişi\n(öğrenci no + şifre)"];
+    login_check [label="Giriş Başarılı?", shape=diamond];
+    display_list [label="Ders Listesini Görüntüle"];
+    
+    input_course [label="Eklenecek Ders Bilgisini Gir", shape=parallelogram, style=filled, fillcolor=lightblue];
+    
+    // Ders Ekleme Kontrolleri
+    quota_check [label="Kontenjan Uygun mu?", shape=diamond];
+    prereq_check [label="Ön Koşul Sağlandı mı?", shape=diamond];
+    conflict_check [label="Zaman Çakışması Var mı?", shape=diamond];
+    credit_check [label="Kredi Limiti (≤ 35)\nAşılıyor mu?", shape=diamond];
+    
+    // Spesifik Hata Mesajları
+    error_quota [label="HATA:\nKontenjan Dolu", shape=note, style=filled, fillcolor=lightcoral];
+    error_prereq [label="HATA:\nÖn Koşul Sağlanmadı", shape=note, style=filled, fillcolor=lightcoral];
+    error_conflict [label="HATA:\nZaman Çakışması Var", shape=note, style=filled, fillcolor=lightcoral];
+    error_credit [label="HATA:\nKredi Limiti Aşıldı", shape=note, style=filled, fillcolor=lightcoral];
+    
+    add_course [label="Dersi Ekle ve\nKrediyi Güncelle"];
+    
+    // YENİ DÜĞÜM: Karar noktası artık ders eklemeden sonra.
+    add_another_q [label="Başka Ders Eklemek\nİster misin?", shape=diamond, style=filled, fillcolor=lightyellow];
+    
+    // Kayıt Sonlandırma
+    summary [label="Kayıt Özeti Göster"];
+    gpa_check [label="GPA < 2.5?", shape=diamond];
+    advisor_approval [label="Danışman Onayı Gerekli", style=filled, fillcolor=orange];
+    confirm_registration [label="Kayıt Onaylandı", style=filled, fillcolor=lightgreen];
+    end [label="Bitir", shape=ellipse];
+
+    // Kenarlar (Akış)
+    start -> login;
+    login -> login_check;
+    login_check:w -> login:w [label="  Hayır", headlabel=""];
+    login_check -> display_list [label="Evet"];
+    
+    // DEĞİŞEN AKIŞ: Ders listesinden sonra doğrudan ders ekleme adımına geçilir.
+    display_list -> input_course;
+    
+    // Ders ekleme ve kontrol akışı
+    input_course -> quota_check;
+    quota_check -> prereq_check [label="Evet"];
+    prereq_check -> conflict_check [label="Evet"];
+    conflict_check -> credit_check [label="Hayır (Çakışma Yok)"];
+    credit_check -> add_course [label="Hayır (Aşılmıyor)"];
+    
+    // Hata akışları yine giriş ekranına döner
+    quota_check -> error_quota [label="Hayır"];
+    prereq_check -> error_prereq [label="Hayır"];
+    conflict_check -> error_conflict [label="Evet (Çakışma Var)"];
+    credit_check -> error_credit [label="Evet (Aşılıyor)"];
+    
+    error_quota -> input_course;
+    error_prereq -> input_course;
+    error_conflict -> input_course;
+    error_credit -> input_course;
+    
+    // DEĞİŞEN AKIŞ: Ders başarıyla eklendikten sonra artık karar verilir.
+    add_course -> add_another_q;
+    
+    // Karar düğümünün çıktıları
+    add_another_q -> input_course [label="Evet"];
+    add_another_q -> summary [label="Hayır, Bitir"];
+    
+    // Sonlandırma Akışı
+    summary -> gpa_check;
+    gpa_check -> advisor_approval [label="Evet"];
+    gpa_check -> confirm_registration [label="Hayır"];
+    
+    advisor_approval -> end;
+    confirm_registration -> end;
+}
 
