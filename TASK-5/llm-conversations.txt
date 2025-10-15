@@ -1,1 +1,810 @@
+Sistem aktif mi kontrol¨u (ko¸sul)
+Sens¨or okuma d¨ong¨us¨u (d¨ong¨u - s¨urekli)
+Hareket sens¨or¨u kontrol¨u (ko¸sul)
+Kapı/pencere sens¨or¨u kontrol¨u (ko¸sul)
+Kamera aktivasyonu (ko¸sul)
+Yanlı¸s alarm kontrol¨u (ev sahibi evde mi?) (ko¸sul)
+Alarm seviyesi belirleme (1-d¨u¸s¨uk, 2-orta, 3-y¨uksek) (ko¸sul)
+Bildirim g¨onderme (SMS + App + Email)
+Bekle ve tekrar kontrol et (d¨ong¨u)
+Alarm sıfırlama veya devam ettirme (ko¸sul) buna pencere kapama kapıkilitleme ekle seviyeye göre alarm düzeyi yukselsin 1 seviye tanıdık kişi eger 1 seviye ise sadece kamerayı calıstır ve uyarı ver seviye 2 tanınmadık yuz olsun bundada kapıları kilitle pencereleri kilitle ve uyarı seviye 3 gizlenmiş yüz maskeli orn bunda ise yine aynı sekil uyarı pencere kapatma ve eger evin içine giriyorsada sis sistemini calıştır eger ev sahibi evde ise 1 seviyeyi ve alarmı calıştır her 3 seviyeyedede eger gece ise 2 seviye her turlu calışsın en ufak harekette bide bu hayvanda olur buna sensor ekle ısı sensoru bunu if elseli yap buda mesela ısı 30 derece ustu ise ınsan olsun altında ise nesne veya hayvan olsun bunada alarm calıstırma hayvanda falan gece  görüşüde ekle gece olunca  calıssın gunduzude ekle kapatsın bunun dot kodunu tasarla dizayn düzgün labeller yerinde olsun
+digraph SecuritySystem {
+  rankdir=TB;
+  node [fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=10];
+
+  /* genel stiller */
+  node_start [label="BAŞLA", shape=oval, style=filled, fillcolor="#d9f2d9"];
+  node_end   [label="BİTİR / SİSTEM PASİF", shape=oval, style=filled, fillcolor="#f2d9d9"];
+
+  /* kontrol ve döngü */
+  chk_active   [label="Sistem Aktif mi?\n(koşul)", shape=diamond];
+  sensor_loop  [label="Sensör Okuma Döngüsü\n(sonsuz döngü)", shape=box];
+  wait_repeat  [label="Bekle ve\nTekrar Kontrol Et\n(döngü)", shape=box];
+
+  /* sensör tetiklemeleri */
+  motion_det   [label="Hareket Sensörü\nhareket var mı?", shape=diamond];
+  doorwin_det  [label="Kapı/Pencere Sensörü\n(açık/ilk değişim?)", shape=diamond];
+  camera_activate [label="Kamera Aktivasyonu\n(koşul)", shape=box];
+
+  /* yanlış alarm kontrolü */
+  false_alarm_check [label="Yanlış Alarm?\n(Ev sahibi evde mi?)", shape=diamond];
+
+  /* seviye belirleme */
+  determine_level [label="Alarm Seviyesi Belirle\n(1-Düşük / 2-Orta / 3-Yüksek)", shape=diamond];
+
+  /* yüz tanıma */
+  face_recog [label="Yüz Tanıma\n=> Tanıdık / Tanınmadık / Maskeli", shape=diamond];
+
+  /* ısı sensörü insan/nesne ayırımı */
+  temp_check [label="Isı Sensörü\n(>30°C => İnsan, ≤30°C => Nesne/Hayvan)", shape=diamond];
+
+  /* gece/gündüz kontrolü */
+  night_check [label="Gece mi?\n(Evet/Hayır)", shape=diamond];
+
+  /* seviye eylemleri */
+  subgraph cluster_lvl1 {
+    label="Seviye 1 - Düşük";
+    style=rounded;
+    lvl1_cam [label="Sadece Kamera Çalıştır\nUyarı Gönder (App/SMS/E-mail)", shape=box];
+  }
+  subgraph cluster_lvl2 {
+    label="Seviye 2 - Orta";
+    style=rounded;
+    lvl2_lock [label="Kapıları Kilitle\nPencereleri Kilitle\nUyarı Gönder", shape=box];
+    lvl2_cam  [label="Kamera + Kayıt", shape=box];
+  }
+  subgraph cluster_lvl3 {
+    label="Seviye 3 - Yüksek";
+    style=rounded;
+    lvl3_lock [label="Kapı/Kilit/Pencere Kapat\nUyarı Gönder", shape=box];
+    lvl3_cam  [label="Kamera + Kayıt + Gece Görüşü\n(çalıştır)", shape=box];
+    lvl3_fog  [label="Sis/Fog Sistemi\n(İçeri Girilirse)", shape=box];
+  }
+
+  /* bildirim ve kayıt */
+  notify   [label="Bildirim Gönder\n(SMS + App + Email)", shape=box];
+  log_event [label="Olay Kaydet / Video Sakla", shape=box];
+
+  /* reset veya devam */
+  reset_or_continue [label="Alarm Sıfırlama\nveya Devam Ettirme\n(koşul)", shape=diamond];
+
+  /* BAĞLANTILAR */
+  node_start -> chk_active;
+  chk_active -> sensor_loop [label="Evet"];
+  chk_active -> node_end [label="Hayır"];
+
+  sensor_loop -> motion_det;
+  sensor_loop -> doorwin_det [label="paralel kontrol"];
+
+  motion_det -> night_check [label="Hareket algılandı"];
+  motion_det -> wait_repeat [label="Hayır"];
+
+  doorwin_det -> night_check [label="Açılma/Değişim"];
+  doorwin_det -> wait_repeat [label="Hayır"];
+
+  /* gece kontrol — gece ise daha hassas */
+  night_check -> temp_check [label="Varsayılan yol\n(gece/gündüz kullanılır)"];
+  night_check -> temp_check [label="Gündüz de aynı yol", style=dashed];
+
+  /* sıcaklık ile insan/nesne ayırımı */
+  temp_check -> face_recog [label=">30°C => İnsan"];
+  temp_check -> log_event [label="≤30°C => Nesne/Hayvan\n(Alarm TETİKLEMEYİN)"];
+
+  /* yüz tanıma ve seviye belirleme */
+  face_recog -> determine_level [label="Tanıma sonucu"];
+  determine_level -> cluster_lvl1 [label="Seviye 1"];
+  determine_level -> cluster_lvl2 [label="Seviye 2"];
+  determine_level -> cluster_lvl3 [label="Seviye 3"];
+
+  /* Ev sahibi varsa davranış */
+  false_alarm_check -> determine_level [label="Ev sahibi evde mi?\nEvet -> Seviye1"];
+  /* false_alarm_check'e sensörlerden bağlan */
+  motion_det -> false_alarm_check [label="", style=dotted];
+  doorwin_det -> false_alarm_check [label="", style=dotted];
+
+  /* Seviye 1 eylemler */
+  cluster_lvl1 -> lvl1_cam;
+  lvl1_cam -> log_event;
+  lvl1_cam -> notify;
+  lvl1_cam -> reset_or_continue;
+
+  /* Seviye 2 eylemler */
+  cluster_lvl2 -> lvl2_cam;
+  lvl2_cam -> lvl2_lock;
+  lvl2_lock -> log_event;
+  lvl2_lock -> notify;
+  lvl2_lock -> reset_or_continue;
+
+  /* Seviye 3 eylemler */
+  cluster_lvl3 -> lvl3_cam;
+  lvl3_cam -> lvl3_lock;
+  lvl3_lock -> log_event;
+  lvl3_lock -> notify;
+  /* İçeri girme kontrolü (ek sensör) */
+  lvl3_lock -> lvl3_fog [label="İçeri girme tespit edilirse"];
+  lvl3_fog -> notify;
+  lvl3_fog -> reset_or_continue;
+
+  /* gece/gündüz görsel kontrolü */
+  night_check -> cluster_lvl3 [label="Gece -> Tüm seviyelerde gece görüş aktif", style=dotted];
+
+  /* küçük hareket veya hayvana izin mantığı */
+  log_event -> wait_repeat;
+  notify -> wait_repeat;
+
+  wait_repeat -> sensor_loop;
+
+  reset_or_continue -> sensor_loop [label="Devam"];
+  reset_or_continue -> node_end [label="Sıfırla & Pasif"];
+
+  /* görsel iyileştirmeler */
+  chk_active [color="#2B7A2B"];
+  motion_det [color="#0055AA"];
+  doorwin_det [color="#0055AA"];
+  temp_check [color="#AA5500"];
+  face_recog [color="#AA0055"];
+  determine_level [color="#7A2B7A"];
+  lvl3_fog [fillcolor="#ffe6cc", style=filled];
+}
+eger sistem aktif değilse uyarı ver ama bu döngü olmasın bide karışık olmuş belli bi düzene oturt bide renk ekle mesela hayırlar okları kırmızı olsun
+digraph SecuritySystem {
+  rankdir=TB;
+  bgcolor="#f8f9fa";
+  node [fontname="Helvetica", fontsize=11, style=filled, fillcolor=white, color="#555"];
+  edge [fontname="Helvetica", fontsize=10, color="#333"];
+
+  /* --- Başlangıç --- */
+  Start [label="🚀 BAŞLA", shape=oval, fillcolor="#c2f0c2"];
+  CheckActive [label="Sistem Aktif mi?", shape=diamond, fillcolor="#fff2cc", color="#b59b00"];
+  NotActiveWarn [label="⚠️ Uyarı: Sistem Aktif Değil!", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  End [label="🛑 BİTİR", shape=oval, fillcolor="#f2dede", color="#b22222"];
+
+  /* --- Sensör Döngüsü --- */
+  SensorLoop [label="Sensör Okuma (sürekli)", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  MotionSensor [label="Hareket Sensörü\n(Hareket var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  DoorWindow [label="Kapı/Pencere Sensörü\n(Açılma var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  TempSensor [label="Isı Sensörü\n>30°C => İnsan\n≤30°C => Hayvan/Nesne", shape=diamond, fillcolor="#fff0e6", color="#b45f06"];
+
+  /* --- Analiz ve Karar --- */
+  NightCheck [label="Gece mi?", shape=diamond, fillcolor="#f2e6ff", color="#7a2b7a"];
+  FaceRecog [label="Yüz Tanıma\n(Tanıdık / Tanınmadık / Maskeli)", shape=diamond, fillcolor="#ffe6f0", color="#a82b5f"];
+  OwnerCheck [label="Ev Sahibi Evde mi?", shape=diamond, fillcolor="#fff2cc"];
+  LevelSelect [label="Alarm Seviyesi\n1: Düşük | 2: Orta | 3: Yüksek", shape=diamond, fillcolor="#e6ffe6", color="#38761d"];
+
+  /* --- Seviye 1 --- */
+  Lvl1 [label="🔹 Seviye 1: Tanıdık Kişi\n→ Kamera Aç\n→ Uyarı Gönder", shape=box, fillcolor="#e0f7fa", color="#00838f"];
+
+  /* --- Seviye 2 --- */
+  Lvl2 [label="🟡 Seviye 2: Tanınmadık Yüz\n→ Kapı & Pencereleri Kilitle\n→ Kamera + Uyarı", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+
+  /* --- Seviye 3 --- */
+  Lvl3 [label="🔴 Seviye 3: Maskeli Kişi\n→ Kilitle + Pencere Kapat\n→ Kamera + Gece Görüş\n→ İçeri Girerse Sis Sistemi", shape=box, fillcolor="#f8d7da", color="#b71c1c"];
+
+  /* --- Diğer İşlemler --- */
+  Notify [label="📨 Bildirim Gönder (SMS + App + Email)", shape=box, fillcolor="#d9f2d9", color="#2e7d32"];
+  Log [label="📁 Olay Kaydı / Video Saklama", shape=box, fillcolor="#e6ecff", color="#1a237e"];
+  Wait [label="⏳ Bekle ve Tekrar Kontrol Et", shape=box, fillcolor="#f5f5f5", color="#666"];
+  Reset [label="🔄 Alarm Sıfırla / Devam Et", shape=diamond, fillcolor="#f0f0f0", color="#555"];
+
+  /* --- Bağlantılar --- */
+  Start -> CheckActive;
+  CheckActive -> SensorLoop [label="Evet ✅"];
+  CheckActive -> NotActiveWarn [label="Hayır ❌", color="red", fontcolor="red"];
+  NotActiveWarn -> End;
+
+  SensorLoop -> MotionSensor;
+  MotionSensor -> DoorWindow [label="Evet ✅"];
+  MotionSensor -> Wait [label="Hayır ❌", color="red", fontcolor="red"];
+
+  DoorWindow -> TempSensor [label="Evet ✅"];
+  DoorWindow -> Wait [label="Hayır ❌", color="red", fontcolor="red"];
+
+  TempSensor -> FaceRecog [label=">30°C (İnsan)"];
+  TempSensor -> Log [label="≤30°C (Hayvan/Nesne)", color="red", fontcolor="red"];
+
+  FaceRecog -> OwnerCheck;
+  OwnerCheck -> LevelSelect [label="Hayır"];
+  OwnerCheck -> Lvl1 [label="Evet (Ev Sahibi)", color="green"];
+
+  LevelSelect -> Lvl1 [label="1"];
+  LevelSelect -> Lvl2 [label="2"];
+  LevelSelect -> Lvl3 [label="3"];
+
+  /* eylemler */
+  Lvl1 -> Notify;
+  Lvl2 -> Notify;
+  Lvl3 -> Notify;
+  Notify -> Log;
+  Log -> Reset;
+  Reset -> Wait [label="Devam"];
+  Reset -> End [label="Durdur", color="red", fontcolor="red"];
+
+  Wait -> SensorLoop;
+
+  /* gece durumu */
+  NightCheck -> FaceRecog [label="Gündüz"];
+  NightCheck -> Lvl2 [label="Gece: Her Hareket = Alarm 2", color="#7a2b7a"];
+
+  MotionSensor -> NightCheck [label="Hareket Algılandı"];
+
+  /* estetik ayarlar */
+  labelloc="t";
+  label="🏠 AKILLI GÜVENLİK SİSTEMİ AKIŞ DİYAGRAMI";
+  fontsize=18;
+}
+gece gündüzü baslarda okusun sisteme sonradaan dahil degil basında olsun
+digraph SmartSecuritySystem {
+  rankdir=TB;
+  bgcolor="#f8f9fa";
+  node [fontname="Helvetica", fontsize=11, style=filled, fillcolor=white, color="#555"];
+  edge [fontname="Helvetica", fontsize=10, color="#333"];
+
+  /* --- Başlangıç --- */
+  Start [label="🚀 BAŞLA", shape=oval, fillcolor="#c2f0c2"];
+  DayNight [label="🌙☀️ Gece mi Gündüz mü?\n(Saat / Işık Sensörü)", shape=diamond, fillcolor="#f2e6ff", color="#7a2b7a"];
+  CheckActive [label="🔋 Sistem Aktif mi?", shape=diamond, fillcolor="#fff2cc", color="#b59b00"];
+  NotActiveWarn [label="⚠️ Uyarı: Sistem Aktif Değil!", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  End [label="🛑 BİTİR", shape=oval, fillcolor="#f2dede", color="#b22222"];
+
+  /* --- Sensör Okuma --- */
+  SensorLoop [label="🔄 Sensör Okuma Döngüsü", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  MotionSensor [label="🚶‍♂️ Hareket Sensörü\n(Hareket var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  DoorWindow [label="🚪 Kapı/Pencere Sensörü\n(Açılma var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  TempSensor [label="🌡️ Isı Sensörü\n>30°C → İnsan\n≤30°C → Hayvan/Nesne", shape=diamond, fillcolor="#fff0e6", color="#b45f06"];
+
+  /* --- Analiz ve Karar --- */
+  FaceRecog [label="👤 Yüz Tanıma\n(Tanıdık / Tanınmadık / Maskeli)", shape=diamond, fillcolor="#ffe6f0", color="#a82b5f"];
+  OwnerCheck [label="🏠 Ev Sahibi Evde mi?", shape=diamond, fillcolor="#fff2cc"];
+  LevelSelect [label="📊 Alarm Seviyesi Belirle\n(1: Düşük | 2: Orta | 3: Yüksek)", shape=diamond, fillcolor="#e6ffe6", color="#38761d"];
+
+  /* --- Seviye Eylemleri --- */
+  Lvl1 [label="🔹 Seviye 1: Tanıdık Kişi\n→ Kamera Aç\n→ Uyarı Gönder", shape=box, fillcolor="#e0f7fa", color="#00838f"];
+  Lvl2 [label="🟡 Seviye 2: Tanınmadık Yüz\n→ Kapı & Pencereleri Kilitle\n→ Kamera + Uyarı", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+  Lvl3 [label="🔴 Seviye 3: Maskeli Kişi\n→ Kilitle + Pencere Kapat\n→ Kamera + Gece Görüş\n→ İçeri Girerse Sis Sistemi", shape=box, fillcolor="#f8d7da", color="#b71c1c"];
+
+  /* --- Diğer İşlemler --- */
+  Notify [label="📨 Bildirim Gönder (SMS + App + Email)", shape=box, fillcolor="#d9f2d9", color="#2e7d32"];
+  Log [label="📁 Olay Kaydı / Video Sakla", shape=box, fillcolor="#e6ecff", color="#1a237e"];
+  Wait [label="⏳ Bekle ve Tekrar Kontrol Et", shape=box, fillcolor="#f5f5f5", color="#666"];
+  Reset [label="🔄 Alarm Sıfırla / Devam Et", shape=diamond, fillcolor="#f0f0f0", color="#555"];
+
+  /* --- Akış --- */
+  Start -> DayNight;
+  DayNight -> CheckActive [label="Tespit edildi"];
+  CheckActive -> SensorLoop [label="Evet ✅"];
+  CheckActive -> NotActiveWarn [label="Hayır ❌", color="red", fontcolor="red"];
+  NotActiveWarn -> End;
+
+  SensorLoop -> MotionSensor;
+  MotionSensor -> DoorWindow [label="Evet ✅"];
+  MotionSensor -> Wait [label="Hayır ❌", color="red", fontcolor="red"];
+
+  DoorWindow -> TempSensor [label="Evet ✅"];
+  DoorWindow -> Wait [label="Hayır ❌", color="red", fontcolor="red"];
+
+  TempSensor -> FaceRecog [label=">30°C (İnsan)"];
+  TempSensor -> Log [label="≤30°C (Hayvan/Nesne)", color="red", fontcolor="red"];
+
+  FaceRecog -> OwnerCheck;
+  OwnerCheck -> LevelSelect [label="Hayır"];
+  OwnerCheck -> Lvl1 [label="Evet (Ev Sahibi)", color="green"];
+
+  LevelSelect -> Lvl1 [label="1"];
+  LevelSelect -> Lvl2 [label="2"];
+  LevelSelect -> Lvl3 [label="3"];
+
+  Lvl1 -> Notify;
+  Lvl2 -> Notify;
+  Lvl3 -> Notify;
+  Notify -> Log;
+  Log -> Reset;
+
+  Reset -> Wait [label="Devam"];
+  Reset -> End [label="Durdur", color="red", fontcolor="red"];
+  Wait -> SensorLoop;
+
+  /* --- Gece/Gündüz etkisi --- */
+  DayNight -> Lvl2 [label="Gece ise:\nDaha hassas seviye 2 başlat", color="#7a2b7a"];
+  
+  /* Genel başlık */
+  labelloc="t";
+  label="🏠 AKILLI GÜVENLİK SİSTEMİ — Gece/Gündüz Başta Okunur";
+  fontsize=18;
+}
+sistem aktifmiden sonra sor ve evet hayırda ekle ona göre sistemi yonelt
+digraph SmartSecuritySystem {
+  rankdir=TB;
+  bgcolor="#f8f9fa";
+  node [fontname="Helvetica", fontsize=11, style=filled, fillcolor=white, color="#555"];
+  edge [fontname="Helvetica", fontsize=10, color="#333"];
+
+  /* --- Başlangıç --- */
+  Start [label="BASLA", shape=oval, fillcolor="#c2f0c2"];
+  DayNight [label="Gece mi Gündüz mü?\n(Saat / Işık Sensörü)", shape=diamond, fillcolor="#f2e6ff", color="#7a2b7a"];
+  CheckActive [label="Sistem Aktif mi?", shape=diamond, fillcolor="#fff2cc", color="#b59b00"];
+  ActiveYes [label="Evet — Sistem Aktif", shape=box, fillcolor="#d9f2d9", color="#2e7d32"];
+  ActiveNo [label="Hayır — Uyarı: Sistem Aktif Değil!", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  End [label="BİTİR", shape=oval, fillcolor="#f2dede", color="#b22222"];
+
+  /* --- Sensör Okuma --- */
+  SensorLoop [label="Sensör Okuma Döngüsü", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  MotionSensor [label="Hareket Sensörü\n(Hareket var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  DoorWindow [label="Kapı/Pencere Sensörü\n(Açılma var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  TempSensor [label="Isı Sensörü\n>30°C → İnsan\n≤30°C → Hayvan/Nesne", shape=diamond, fillcolor="#fff0e6", color="#b45f06"];
+
+  /* --- Analiz ve Karar --- */
+  FaceRecog [label="Yüz Tanıma\n(Tanıdık / Tanınmadık / Maskeli)", shape=diamond, fillcolor="#ffe6f0", color="#a82b5f"];
+  OwnerCheck [label="Ev Sahibi Evde mi?", shape=diamond, fillcolor="#fff2cc"];
+  LevelSelect [label="Alarm Seviyesi Belirle\n(1: Düşük | 2: Orta | 3: Yüksek)", shape=diamond, fillcolor="#e6ffe6", color="#38761d"];
+
+  /* --- Seviye Eylemleri --- */
+  Lvl1 [label="Seviye 1: Tanıdık Kişi\n→ Kamera Aç\n→ Uyarı Gönder", shape=box, fillcolor="#e0f7fa", color="#00838f"];
+  Lvl2 [label="Seviye 2: Tan
+hayır sadece dediğimi yap bu gece gunduzu sistem aktifmi sorusundan sonra getir evetse sor gece mi gunduzmu
+digraph SmartSecuritySystem {
+  rankdir=TB;
+  bgcolor="#f8f9fa";
+  node [fontname="Helvetica", fontsize=11, style=filled, fillcolor=white, color="#555"];
+  edge [fontname="Helvetica", fontsize=10, color="#333"];
+
+  /* --- Başlangıç --- */
+  Start [label="BASLA", shape=oval, fillcolor="#c2f0c2"];
+  CheckActive [label="Sistem Aktif mi?", shape=diamond, fillcolor="#fff2cc", color="#b59b00"];
+  ActiveYes [label="Evet", shape=box, fillcolor="#d9f2d9", color="#2e7d32"];
+  ActiveNo [label="Hayır — Uyarı: Sistem Aktif Değil!", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  DayNight [label="Gece mi Gündüz mü?", shape=diamond, fillcolor="#f2e6ff", color="#7a2b7a"];
+
+  /* --- Sensör ve Kontroller --- */
+  SensorLoop [label="Sensör Okuma Döngüsü", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  MotionSensor [label="Hareket Sensörü\n(Hareket var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  DoorWindow [label="Kapı/Pencere Sensörü\n(Açılma var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  TempSensor [label="Isı Sensörü\n>30°C → İnsan\n≤30°C → Hayvan/Nesne", shape=diamond, fillcolor="#fff0e6", color="#b45f06"];
+  FaceRecog [label="Yüz Tanıma\n(Tanıdık / Tanınmadık / Maskeli)", shape=diamond, fillcolor="#ffe6f0", color="#a82b5f"];
+  OwnerCheck [label="Ev Sahibi Evde mi?", shape=diamond, fillcolor="#fff2cc"];
+  LevelSelect [label="Alarm Seviyesi Belirle\n(1: Düşük | 2: Orta | 3: Yüksek)", shape=diamond, fillcolor="#e6ffe6", color="#38761d"];
+
+  /* --- Alarm Seviyeleri --- */
+  Lvl1 [label="Seviye 1: Tanıdık Kişi\n→ Kamera Aç + Uyarı Gönder", shape=box, fillcolor="#e0f7fa", color="#00838f"];
+  Lvl2 [label="Seviye 2: Tanınmadık Yüz\n→ Kapı/Pencere Kilitle + Kamera + Uyarı", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+  Lvl3 [label="Seviye 3: Maskeli Yüz\n→ Kilitle + Uyarı + Sis Sistemi", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+
+  /* --- Döngü ve Son --- */
+  Notify [label="Bildirim Gönder (SMS + App + Email)", shape=box, fillcolor="#d9ead3", color="#38761d"];
+  WaitLoop [label="Bekle ve Tekrar Kontrol Et", shape=parallelogram, fillcolor="#d9eaf7"];
+  End [label="BİTİR", shape=oval, fillcolor="#f2dede", color="#b22222"];
+
+  /* --- Akış --- */
+  Start -> CheckActive;
+
+  /* Sistem aktif mi? */
+  CheckActive -> ActiveYes [label="Evet", color="green"];
+  CheckActive -> ActiveNo [label="Hayır", color="red"];
+  ActiveNo -> End;
+
+  /* Sistem aktifse gece/gündüz sor */
+  ActiveYes -> DayNight;
+
+  /* Gece veya gündüz fark etmeden sensör başlar */
+  DayNight -> SensorLoop [label="Gece", color="blue"];
+  DayNight -> SensorLoop [label="Gündüz", color="orange"];
+
+  /* Sensör akışı */
+  SensorLoop -> MotionSensor;
+  MotionSensor -> DoorWindow [label="Evet", color="green"];
+  MotionSensor -> WaitLoop [label="Hayır", color="red"];
+
+  DoorWindow -> TempSensor [label="Evet", color="green"];
+  DoorWindow -> WaitLoop [label="Hayır", color="red"];
+
+  TempSensor -> FaceRecog [label=">30°C (İnsan)", color="green"];
+  TempSensor -> WaitLoop [label="≤30°C (Hayvan/Nesne)", color="red"];
+
+  FaceRecog -> OwnerCheck;
+  OwnerCheck -> LevelSelect [label="Ev Sahibi Evde", color="orange"];
+  OwnerCheck -> LevelSelect [label="Ev Sahibi Yok", color="green"];
+
+  /* Alarm seviyeleri */
+  LevelSelect -> Lvl1 [label="1", color="green"];
+  LevelSelect -> Lvl2 [label="2", color="orange"];
+  LevelSelect -> Lvl3 [label="3", color="red"];
+
+  /* Son adımlar */
+  Lvl1 -> Notify;
+  Lvl2 -> Notify;
+  Lvl3 -> Notify;
+  Notify -> WaitLoop;
+  WaitLoop -> SensorLoop;
+}
+eger gece ise gece gorusu acsın 
+digraph SmartSecuritySystem {
+  rankdir=TB;
+  bgcolor="#f8f9fa";
+  node [fontname="Helvetica", fontsize=11, style=filled, fillcolor=white, color="#555"];
+  edge [fontname="Helvetica", fontsize=10, color="#333"];
+
+  /* --- Başlangıç --- */
+  Start [label="BASLA", shape=oval, fillcolor="#c2f0c2"];
+  CheckActive [label="Sistem Aktif mi?", shape=diamond, fillcolor="#fff2cc", color="#b59b00"];
+  ActiveYes [label="Evet", shape=box, fillcolor="#d9f2d9", color="#2e7d32"];
+  ActiveNo [label="Hayır — Uyarı: Sistem Aktif Değil!", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  DayNight [label="Gece mi Gündüz mü?", shape=diamond, fillcolor="#f2e6ff", color="#7a2b7a"];
+  NightVision [label="Gece Görüşünü Aç", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  DayMode [label="Gündüz Modu (Normal Kamera)", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+
+  /* --- Sensör ve Kontroller --- */
+  SensorLoop [label="Sensör Okuma Döngüsü", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  MotionSensor [label="Hareket Sensörü\n(Hareket var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  DoorWindow [label="Kapı/Pencere Sensörü\n(Açılma var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  TempSensor [label="Isı Sensörü\n>30°C → İnsan\n≤30°C → Hayvan/Nesne", shape=diamond, fillcolor="#fff0e6", color="#b45f06"];
+  FaceRecog [label="Yüz Tanıma\n(Tanıdık / Tanınmadık / Maskeli)", shape=diamond, fillcolor="#ffe6f0", color="#a82b5f"];
+  OwnerCheck [label="Ev Sahibi Evde mi?", shape=diamond, fillcolor="#fff2cc"];
+  LevelSelect [label="Alarm Seviyesi Belirle\n(1: Düşük | 2: Orta | 3: Yüksek)", shape=diamond, fillcolor="#e6ffe6", color="#38761d"];
+
+  /* --- Alarm Seviyeleri --- */
+  Lvl1 [label="Seviye 1: Tanıdık Kişi\n→ Kamera Aç + Uyarı Gönder", shape=box, fillcolor="#e0f7fa", color="#00838f"];
+  Lvl2 [label="Seviye 2: Tanınmadık Yüz\n→ Kapı/Pencere Kilitle + Kamera + Uyarı", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+  Lvl3 [label="Seviye 3: Maskeli Yüz\n→ Kilitle + Uyarı + Sis Sistemi", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+
+  /* --- Döngü ve Son --- */
+  Notify [label="Bildirim Gönder (SMS + App + Email)", shape=box, fillcolor="#d9ead3", color="#38761d"];
+  WaitLoop [label="Bekle ve Tekrar Kontrol Et", shape=parallelogram, fillcolor="#d9eaf7"];
+  End [label="BİTİR", shape=oval, fillcolor="#f2dede", color="#b22222"];
+
+  /* --- Akış --- */
+  Start -> CheckActive;
+
+  /* Sistem aktif mi? */
+  CheckActive -> ActiveYes [label="Evet", color="green"];
+  CheckActive -> ActiveNo [label="Hayır", color="red"];
+  ActiveNo -> End;
+
+  /* Sistem aktifse gece/gündüz sor */
+  ActiveYes -> DayNight;
+
+  /* Gece/Gündüz dalları */
+  DayNight -> NightVision [label="Gece", color="blue"];
+  DayNight -> DayMode [label="Gündüz", color="orange"];
+
+  /* Kamera modundan sonra sensör döngüsüne geç */
+  NightVision -> SensorLoop;
+  DayMode -> SensorLoop;
+
+  /* Sensör akışı */
+  SensorLoop -> MotionSensor;
+  MotionSensor -> DoorWindow [label="Evet", color="green"];
+  MotionSensor -> WaitLoop [label="Hayır", color="red"];
+
+  DoorWindow -> TempSensor [label="Evet", color="green"];
+  DoorWindow -> WaitLoop [label="Hayır", color="red"];
+
+  TempSensor -> FaceRecog [label=">30°C (İnsan)", color="green"];
+  TempSensor -> WaitLoop [label="≤30°C (Hayvan/Nesne)", color="red"];
+
+  FaceRecog -> OwnerCheck;
+  OwnerCheck -> LevelSelect [label="Ev Sahibi Evde", color="orange"];
+  OwnerCheck -> LevelSelect [label="Ev Sahibi Yok", color="green"];
+
+  /* Alarm seviyeleri */
+  LevelSelect -> Lvl1 [label="1", color="green"];
+  LevelSelect -> Lvl2 [label="2", color="orange"];
+  LevelSelect -> Lvl3 [label="3", color="red"];
+
+  /* Son adımlar */
+  Lvl1 -> Notify;
+  Lvl2 -> Notify;
+  Lvl3 -> Notify;
+  Notify -> WaitLoop;
+  WaitLoop -> SensorLoop;
+}
+ev sahibi evde ise alarm 1 i aktif yapsın kamera ve uyarı versin sadece
+digraph SmartSecuritySystem {
+  rankdir=TB;
+  bgcolor="#f8f9fa";
+  node [fontname="Helvetica", fontsize=11, style=filled, fillcolor=white, color="#555"];
+  edge [fontname="Helvetica", fontsize=10, color="#333"];
+
+  /* --- Başlangıç --- */
+  Start [label="BASLA", shape=oval, fillcolor="#c2f0c2"];
+  CheckActive [label="Sistem Aktif mi?", shape=diamond, fillcolor="#fff2cc", color="#b59b00"];
+  ActiveYes [label="Evet", shape=box, fillcolor="#d9f2d9", color="#2e7d32"];
+  ActiveNo [label="Hayır — Uyarı: Sistem Aktif Değil!", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  DayNight [label="Gece mi Gündüz mü?", shape=diamond, fillcolor="#f2e6ff", color="#7a2b7a"];
+  NightVision [label="Gece Görüşünü Aç", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  DayMode [label="Gündüz Modu (Normal Kamera)", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+
+  /* --- Sensör ve Kontroller --- */
+  SensorLoop [label="Sensör Okuma Döngüsü", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  MotionSensor [label="Hareket Sensörü\n(Hareket var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  DoorWindow [label="Kapı/Pencere Sensörü\n(Açılma var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  TempSensor [label="Isı Sensörü\n>30°C → İnsan\n≤30°C → Hayvan/Nesne", shape=diamond, fillcolor="#fff0e6", color="#b45f06"];
+  FaceRecog [label="Yüz Tanıma\n(Tanıdık / Tanınmadık / Maskeli)", shape=diamond, fillcolor="#ffe6f0", color="#a82b5f"];
+  OwnerCheck [label="Ev Sahibi Evde mi?", shape=diamond, fillcolor="#fff2cc"];
+
+  /* --- Alarm Seviyeleri --- */
+  Lvl1 [label="Seviye 1: Tanıdık Kişi veya Ev Sahibi Evde\n→ Kamera Aç + Uyarı Gönder", shape=box, fillcolor="#e0f7fa", color="#00838f"];
+  Lvl2 [label="Seviye 2: Tanınmadık Yüz\n→ Kapı/Pencere Kilitle + Kamera + Uyarı", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+  Lvl3 [label="Seviye 3: Maskeli Yüz\n→ Kilitle + Uyarı + Sis Sistemi", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+
+  /* --- Döngü ve Son --- */
+  Notify [label="Bildirim Gönder (SMS + App + Email)", shape=box, fillcolor="#d9ead3", color="#38761d"];
+  WaitLoop [label="Bekle ve Tekrar Kontrol Et", shape=parallelogram, fillcolor="#d9eaf7"];
+  End [label="BİTİR", shape=oval, fillcolor="#f2dede", color="#b22222"];
+
+  /* --- Akış --- */
+  Start -> CheckActive;
+
+  /* Sistem aktif mi? */
+  CheckActive -> ActiveYes [label="Evet", color="green"];
+  CheckActive -> ActiveNo [label="Hayır", color="red"];
+  ActiveNo -> End;
+
+  /* Sistem aktifse gece/gündüz sor */
+  ActiveYes -> DayNight;
+
+  /* Gece/Gündüz dalları */
+  DayNight -> NightVision [label="Gece", color="blue"];
+  DayNight -> DayMode [label="Gündüz", color="orange"];
+
+  /* Kamera modundan sonra sensör döngüsüne geç */
+  NightVision -> SensorLoop;
+  DayMode -> SensorLoop;
+
+  /* Sensör akışı */
+  SensorLoop -> MotionSensor;
+  MotionSensor -> DoorWindow [label="Evet", color="green"];
+  MotionSensor -> WaitLoop [label="Hayır", color="red"];
+
+  DoorWindow -> TempSensor [label="Evet", color="green"];
+  DoorWindow -> WaitLoop [label="Hayır", color="red"];
+
+  TempSensor -> FaceRecog [label=">30°C (İnsan)", color="green"];
+  TempSensor -> WaitLoop [label="≤30°C (Hayvan/Nesne)", color="red"];
+
+  /* Ev sahibi kontrolü */
+  FaceRecog -> OwnerCheck;
+  OwnerCheck -> Lvl1 [label="Ev Sahibi Evde", color="green"];
+  OwnerCheck -> FaceRecog [label="Ev Sahibi Yok", color="orange"];
+
+  /* Eğer ev sahibi yoksa yüz tanımadan seviye belirleme */
+  FaceRecog -> Lvl1 [label="Tanıdık", color="green"];
+  FaceRecog -> Lvl2 [label="Tanınmadık", color="orange"];
+  FaceRecog -> Lvl3 [label="Maskeli", color="red"];
+
+  /* Son adımlar */
+  Lvl1 -> Notify;
+  Lvl2 -> Notify;
+  Lvl3 -> Notify;
+  Notify -> WaitLoop;
+  WaitLoop -> SensorLoop;
+}
+bekle ve tekrar eti basa baglaki tekrar dongu olsun sistem aktifmiye dogru ok götür
+digraph SmartSecuritySystem {
+  rankdir=TB;
+  bgcolor="#f8f9fa";
+  node [fontname="Helvetica", fontsize=11, style=filled, fillcolor=white, color="#555"];
+  edge [fontname="Helvetica", fontsize=10, color="#333"];
+
+  /* --- Başlangıç --- */
+  Start [label="BASLA", shape=oval, fillcolor="#c2f0c2"];
+  CheckActive [label="Sistem Aktif mi?", shape=diamond, fillcolor="#fff2cc", color="#b59b00"];
+  ActiveNo [label="Hayır — Uyarı: Sistem Aktif Değil!", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  DayNight [label="Gece mi Gündüz mü?", shape=diamond, fillcolor="#f2e6ff", color="#7a2b7a"];
+  NightVision [label="Gece Görüşünü Aç", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  DayMode [label="Gündüz Modu (Normal Kamera)", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+
+  /* --- Sensör ve Kontroller --- */
+  SensorLoop [label="Sensör Okuma Döngüsü", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  MotionSensor [label="Hareket Sensörü\n(Hareket var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  TempSensor [label="Isı Sensörü\n>30°C → İnsan\n≤30°C → Hayvan/Nesne", shape=diamond, fillcolor="#fff0e6", color="#b45f06"];
+  FaceRecog [label="Yüz Tanıma\n(Tanıdık / Tanınmadık / Maskeli)", shape=diamond, fillcolor="#ffe6f0", color="#a82b5f"];
+  OwnerCheck [label="Ev Sahibi Evde mi?", shape=diamond, fillcolor="#fff2cc"];
+
+  /* --- Alarm Seviyeleri --- */
+  Lvl1 [label="Seviye 1: Tanıdık Kişi veya Ev Sahibi Evde\n→ Kamera Aç + Uyarı Gönder", shape=box, fillcolor="#e0f7fa", color="#00838f"];
+  Lvl2 [label="Seviye 2: Tanınmadık Yüz\n→ Kamera + Uyarı", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+  Lvl3 [label="Seviye 3: Maskeli Yüz\n→ Kamera + Uyarı + Sis Sistemi", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+
+  /* --- Döngü ve Son --- */
+  Notify [label="Bildirim Gönder (SMS + App + Email)", shape=box, fillcolor="#d9ead3", color="#38761d"];
+  WaitLoop [label="Bekle ve Tekrar Kontrol Et", shape=parallelogram, fillcolor="#d9eaf7"];
+  End [label="BİTİR", shape=oval, fillcolor="#f2dede", color="#b22222"];
+
+  /* --- Akış --- */
+  Start -> CheckActive;
+  
+  /* Sistem aktif mi? */
+  CheckActive -> DayNight [label="Evet", color="green"];
+  CheckActive -> ActiveNo [label="Hayır", color="red"];
+  ActiveNo -> WaitLoop;
+  
+  /* Bekle ve döngü */
+  WaitLoop -> CheckActive [label="Tekrar Kontrol", color="blue"];
+
+  /* Gece/Gündüz kontrolü */
+  DayNight -> NightVision [label="Gece", color="blue"];
+  DayNight -> DayMode [label="Gündüz", color="orange"];
+
+  NightVision -> SensorLoop;
+  DayMode -> SensorLoop;
+
+  /* Sensör akışı */
+  SensorLoop -> MotionSensor;
+  MotionSensor -> TempSensor [label="Evet", color="green"];
+  MotionSensor -> WaitLoop [label="Hayır", color="red"];
+
+  TempSensor -> FaceRecog [label=">30°C (İnsan)", color="green"];
+  TempSensor -> WaitLoop [label="≤30°C (Hayvan/Nesne)", color="red"];
+
+  /* Ev sahibi kontrolü */
+  FaceRecog -> OwnerCheck;
+  OwnerCheck -> Lvl1 [label="Ev Sahibi Evde", color="green"];
+  OwnerCheck -> FaceRecog [label="Ev Sahibi Yok", color="orange"];
+
+  /* Yüz tanımaya göre seviye belirleme */
+  FaceRecog -> Lvl1 [label="Tanıdık", color="green"];
+  FaceRecog -> Lvl2 [label="Tanınmadık", color="orange"];
+  FaceRecog -> Lvl3 [label="Maskeli", color="red"];
+
+  /* Son adımlar */
+  Lvl1 -> Notify;
+  Lvl2 -> Notify;
+  Lvl3 -> Notify;
+  Notify -> WaitLoop;
+}
+sis sistemini eger sahıs eve girerse calıstır
+digraph SmartSecuritySystem {
+  rankdir=TB;
+  bgcolor="#f8f9fa";
+  node [fontname="Helvetica", fontsize=11, style=filled, fillcolor=white, color="#555"];
+  edge [fontname="Helvetica", fontsize=10, color="#333"];
+
+  /* --- Başlangıç --- */
+  Start [label="BASLA", shape=oval, fillcolor="#c2f0c2"];
+  CheckActive [label="Sistem Aktif mi?", shape=diamond, fillcolor="#fff2cc", color="#b59b00"];
+  ActiveNo [label="Hayır — Uyarı: Sistem Aktif Değil!", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  DayNight [label="Gece mi Gündüz mü?", shape=diamond, fillcolor="#f2e6ff", color="#7a2b7a"];
+  NightVision [label="Gece Görüşünü Aç", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  DayMode [label="Gündüz Modu (Normal Kamera)", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+
+  /* --- Sensör ve Kontroller --- */
+  SensorLoop [label="Sensör Okuma Döngüsü", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  MotionSensor [label="Hareket Sensörü\n(Hareket var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  TempSensor [label="Isı Sensörü\n>30°C → İnsan\n≤30°C → Hayvan/Nesne", shape=diamond, fillcolor="#fff0e6", color="#b45f06"];
+  OwnerCheck [label="Ev Sahibi Evde mi?", shape=diamond, fillcolor="#fff2cc"];
+  FaceRecog [label="Yüz Tanıma\n(Tanıdık / Tanınmadık / Maskeli)", shape=diamond, fillcolor="#ffe6f0", color="#a82b5f"];
+  Intrusion [label="Evin İçine Girdi mi?", shape=diamond, fillcolor="#fce5cd", color="#e69138"];
+
+  /* --- Alarm Seviyeleri --- */
+  Lvl1 [label="Seviye 1: Tanıdık Kişi veya Ev Sahibi Evde\n→ Kamera Aç + Uyarı Gönder", shape=box, fillcolor="#e0f7fa", color="#00838f"];
+  Lvl2 [label="Seviye 2: Tanınmadık Yüz\n→ Kamera + Uyarı", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+  Lvl3 [label="Seviye 3: Maskeli Yüz\n→ Kamera + Uyarı + Sis Sistemi (Eve Girişte)", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+
+  /* --- Bildirim ve Döngü --- */
+  Notify [label="Bildirim Gönder (SMS + App + Email)", shape=box, fillcolor="#d9ead3", color="#38761d"];
+  WaitLoop [label="Bekle ve Tekrar Kontrol Et", shape=parallelogram, fillcolor="#d9eaf7"];
+  End [label="BİTİR", shape=oval, fillcolor="#f2dede", color="#b22222"];
+
+  /* --- Akış --- */
+  Start -> CheckActive;
+  
+  /* Sistem aktif mi? */
+  CheckActive -> DayNight [label="Evet", color="green"];
+  CheckActive -> ActiveNo [label="Hayır", color="red"];
+  ActiveNo -> End;
+
+  /* Gece/Gündüz kontrolü */
+  DayNight -> NightVision [label="Gece", color="blue"];
+  DayNight -> DayMode [label="Gündüz", color="orange"];
+
+  NightVision -> SensorLoop;
+  DayMode -> SensorLoop;
+
+  /* Sensör akışı */
+  SensorLoop -> MotionSensor;
+  MotionSensor -> TempSensor [label="Evet", color="green"];
+  MotionSensor -> WaitLoop [label="Hayır", color="red"];
+
+  TempSensor -> OwnerCheck [label=">30°C (İnsan)", color="green"];
+  TempSensor -> WaitLoop [label="≤30°C (Hayvan/Nesne)", color="red"];
+
+  /* Ev sahibi kontrolü */
+  OwnerCheck -> Lvl1 [label="Ev Sahibi Evde", color="green"];
+  OwnerCheck -> FaceRecog [label="Ev Sahibi Yok", color="orange"];
+
+  /* Yüz tanımaya göre seviye belirleme */
+  FaceRecog -> Lvl1 [label="Tanıdık", color="green"];
+  FaceRecog -> Lvl2 [label="Tanınmadık", color="orange"];
+  FaceRecog -> Intrusion [label="Maskeli", color="red"];
+
+  /* Ev içi giriş kontrolü Seviye 3 için */
+  Intrusion -> Lvl3 [label="Eve Girdi", color="red"];
+  Intrusion -> Lvl3 [label="Girmedi", color="orange"];
+
+  /* Son adımlar ve döngü */
+  Lvl1 -> Notify;
+  Lvl2 -> Notify;
+  Lvl3 -> Notify;
+  Notify -> WaitLoop;
+  WaitLoop -> SensorLoop;
+}
+seviye 3 ün girdi kısmınada kapalıraı kilitlet eger eve o halde bile girerse sis calışsın
+digraph SmartSecuritySystem {
+  rankdir=TB;
+  bgcolor="#f8f9fa";
+  node [fontname="Helvetica", fontsize=11, style=filled, fillcolor=white, color="#555"];
+  edge [fontname="Helvetica", fontsize=10, color="#333"];
+
+  /* --- Başlangıç --- */
+  Start [label="BASLA", shape=oval, fillcolor="#c2f0c2"];
+  CheckActive [label="Sistem Aktif mi?", shape=diamond, fillcolor="#fff2cc", color="#b59b00"];
+  ActiveNo [label="Hayır — Uyarı: Sistem Aktif Değil!", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  DayNight [label="Gece mi Gündüz mü?", shape=diamond, fillcolor="#f2e6ff", color="#7a2b7a"];
+  NightVision [label="Gece Görüşünü Aç", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  DayMode [label="Gündüz Modu (Normal Kamera)", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+
+  /* --- Sensör ve Kontroller --- */
+  SensorLoop [label="Sensör Okuma Döngüsü", shape=box, fillcolor="#d9eaf7", color="#2a6ebb"];
+  MotionSensor [label="Hareket Sensörü\n(Hareket var mı?)", shape=diamond, fillcolor="#e6f0ff"];
+  TempSensor [label="Isı Sensörü\n>30°C → İnsan\n≤30°C → Hayvan/Nesne", shape=diamond, fillcolor="#fff0e6", color="#b45f06"];
+  OwnerCheck [label="Ev Sahibi Evde mi?", shape=diamond, fillcolor="#fff2cc"];
+  FaceRecog [label="Yüz Tanıma\n(Tanıdık / Tanınmadık / Maskeli)", shape=diamond, fillcolor="#ffe6f0", color="#a82b5f"];
+  Intrusion [label="Evin İçine Girdi mi?", shape=diamond, fillcolor="#fce5cd", color="#e69138"];
+
+  /* --- Alarm Seviyeleri --- */
+  Lvl1 [label="Seviye 1: Tanıdık Kişi veya Ev Sahibi Evde\n→ Kamera Aç + Uyarı Gönder", shape=box, fillcolor="#e0f7fa", color="#00838f"];
+  Lvl2 [label="Seviye 2: Tanınmadık Yüz\n→ Kamera + Uyarı + Kapılar ve Pencereler Kilitlensin", shape=box, fillcolor="#fff2cc", color="#b59b00"];
+  Lvl3 [label="Seviye 3: Maskeli Yüz\n→ Kamera + Uyarı + Kapılar ve Pencereler Kilitlensin", shape=box, fillcolor="#ffd9d9", color="#cc0000"];
+  Lvl3Sis [label="Seviye 3 + Eve Giriş → Sis Sistemi Çalıştır + Kapılar/Pencereler Zaten Kilitli", shape=box, fillcolor="#f4cccc", color="#cc0000"];
+
+  /* --- Bildirim ve Döngü --- */
+  Notify [label="Bildirim Gönder (SMS + App + Email)", shape=box, fillcolor="#d9ead3", color="#38761d"];
+  WaitLoop [label="Bekle ve Tekrar Kontrol Et", shape=parallelogram, fillcolor="#d9eaf7"];
+  End [label="BİTİR", shape=oval, fillcolor="#f2dede", color="#b22222"];
+
+  /* --- Akış --- */
+  Start -> CheckActive;
+  
+  /* Sistem aktif mi? */
+  CheckActive -> DayNight [label="Evet", color="green"];
+  CheckActive -> ActiveNo [label="Hayır", color="red"];
+  ActiveNo -> End;
+
+  /* Gece/Gündüz kontrolü */
+  DayNight -> NightVision [label="Gece", color="blue"];
+  DayNight -> DayMode [label="Gündüz", color="orange"];
+
+  NightVision -> SensorLoop;
+  DayMode -> SensorLoop;
+
+  /* Sensör akışı */
+  SensorLoop -> MotionSensor;
+  MotionSensor -> TempSensor [label="Evet", color="green"];
+  MotionSensor -> WaitLoop [label="Hayır", color="red"];
+
+  TempSensor -> OwnerCheck [label=">30°C (İnsan)", color="green"];
+  TempSensor -> WaitLoop [label="≤30°C (Hayvan/Nesne)", color="red"];
+
+  /* Ev sahibi kontrolü */
+  OwnerCheck -> Lvl1 [label="Ev Sahibi Evde", color="green"];
+  OwnerCheck -> FaceRecog [label="Ev Sahibi Yok", color="orange"];
+
+  /* Yüz tanımaya göre seviye belirleme */
+  FaceRecog -> Lvl1 [label="Tanıdık", color="green"];
+  FaceRecog -> Lvl2 [label="Tanınmadık", color="orange"];
+  FaceRecog -> Intrusion [label="Maskeli", color="red"];
+
+  /* Ev içi giriş kontrolü Seviye 3 için */
+  Intrusion -> Lvl3 [label="Girmedi", color="orange"];
+  Intrusion -> Lvl3Sis [label="Girdi", color="red"];
+
+  /* Son adımlar ve döngü */
+  Lvl1 -> Notify;
+  Lvl2 -> Notify;
+  Lvl3 -> Notify;
+  Lvl3Sis -> Notify;
+  Notify -> WaitLoop;
+  WaitLoop -> SensorLoop;
+}
+
 
